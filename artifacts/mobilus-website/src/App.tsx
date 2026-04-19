@@ -14,6 +14,7 @@ import Contact from "@/pages/contact";
 import Leasing from "@/pages/leasing";
 import About from "@/pages/about";
 import ProductPage from "@/pages/product";
+import AdminPage from "@/pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -26,19 +27,30 @@ function ScrollToTop() {
 }
 
 function Router() {
+  const [location] = useLocation();
+  const isAdmin = location === "/admin";
+
   return (
     <>
       <ScrollToTop />
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/moto" component={Moto} />
-        <Route path="/moto/:slug" component={ProductPage} />
-        <Route path="/velo" component={Velo} />
-        <Route path="/contact" component={Contact} />
-        <Route path="/leasing" component={Leasing} />
-        <Route path="/about" component={About} />
-        <Route component={NotFound} />
-      </Switch>
+      {isAdmin ? (
+        <Switch>
+          <Route path="/admin" component={AdminPage} />
+        </Switch>
+      ) : (
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/moto" component={Moto} />
+            <Route path="/moto/:slug" component={ProductPage} />
+            <Route path="/velo" component={Velo} />
+            <Route path="/contact" component={Contact} />
+            <Route path="/leasing" component={Leasing} />
+            <Route path="/about" component={About} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      )}
     </>
   );
 }
@@ -49,9 +61,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Layout>
-              <Router />
-            </Layout>
+            <Router />
           </WouterRouter>
           <Toaster />
         </TooltipProvider>
