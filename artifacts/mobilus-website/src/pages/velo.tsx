@@ -4,8 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ChevronRight } from "lucide-react";
-
-const categories = ["All", "City", "Mountain", "Electric", "Kids", "Road"];
+import { useI18n } from "@/lib/i18n";
 
 const bikes = [
   {
@@ -75,11 +74,15 @@ const bikes = [
 ];
 
 export default function Velo() {
+  const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const filtered = activeCategory === "All"
-    ? bikes
-    : bikes.filter((b) => b.category === activeCategory);
+  const categories = ["All", "City", "Mountain", "Electric", "Kids", "Road"];
+
+  const filtered =
+    activeCategory === "All"
+      ? bikes
+      : bikes.filter((b) => b.category === activeCategory);
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-background">
@@ -97,11 +100,9 @@ export default function Velo() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter"
           >
-            Velo
+            {t.velo.title}
           </motion.h1>
-          <p className="text-muted-foreground text-lg mt-2">
-            250+ bicycle models for every taste — €7 to €50
-          </p>
+          <p className="text-muted-foreground text-lg mt-2">{t.velo.subtitle}</p>
         </div>
       </div>
 
@@ -118,7 +119,7 @@ export default function Velo() {
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {cat}
+              {cat === "All" ? t.moto.filter_all : cat}
             </button>
           ))}
         </div>
@@ -152,17 +153,13 @@ export default function Velo() {
                     {bike.category}
                   </Badge>
                 </div>
-                <h3 className="font-bold text-foreground text-sm leading-tight mb-3">
-                  {bike.name}
-                </h3>
+                <h3 className="font-bold text-foreground text-sm leading-tight mb-3">{bike.name}</h3>
                 <div className="flex items-center justify-between">
-                  <span className="text-xl font-black text-primary">
-                    €{bike.price.toLocaleString()}
-                  </span>
+                  <span className="text-xl font-black text-primary">€{bike.price.toLocaleString()}</span>
                 </div>
                 <Link href="/contact">
                   <Button className="mt-4 w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
-                    Inquire
+                    {t.velo.inquire}
                   </Button>
                 </Link>
               </div>
@@ -174,15 +171,13 @@ export default function Velo() {
         <div className="mt-20 border border-border p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 bg-card">
           <div>
             <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">
-              Find Your Perfect Ride
+              {t.velo.cta_title}
             </h2>
-            <p className="text-muted-foreground">
-              Visit our store in Riga, Dārzciema 123 — our experts will help you choose.
-            </p>
+            <p className="text-muted-foreground">{t.velo.cta_sub}</p>
           </div>
           <Link href="/contact">
             <Button className="bg-primary hover:bg-primary/90 text-white rounded-none px-8 uppercase font-bold tracking-widest whitespace-nowrap">
-              Get in Touch <ChevronRight className="ml-2 h-4 w-4" />
+              {t.velo.contact} <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>

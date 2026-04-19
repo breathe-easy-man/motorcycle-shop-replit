@@ -3,20 +3,21 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Link } from "wouter";
-import { ChevronRight, Calculator, Building2, Percent, Clock } from "lucide-react";
+import { ChevronRight, Calculator, Building2, Percent } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const ANNUAL_RATE = 0.089;
 const MONTHLY_RATE = ANNUAL_RATE / 12;
-
 const TERM_OPTIONS = [12, 24, 36, 48, 60];
 
 export default function Leasing() {
+  const { t } = useI18n();
   const [price, setPrice] = useState(3000);
-  const [downPaymentPct, setDownPaymentPct] = useState(20);
-  const [term, setTerm] = useState(36);
+  const [firstPaymentPct, setFirstPaymentPct] = useState(10);
+  const [term, setTerm] = useState(24);
 
-  const downPayment = Math.round((price * downPaymentPct) / 100);
-  const principal = price - downPayment;
+  const firstPayment = Math.round((price * firstPaymentPct) / 100);
+  const principal = price - firstPayment;
 
   const monthlyPayment = useMemo(() => {
     if (principal <= 0) return 0;
@@ -25,7 +26,7 @@ export default function Leasing() {
     return (principal * r) / (1 - Math.pow(1 + r, -n));
   }, [principal, term]);
 
-  const totalPayable = monthlyPayment * term + downPayment;
+  const totalPayable = monthlyPayment * term + firstPayment;
   const totalInterest = totalPayable - price;
 
   return (
@@ -38,17 +39,12 @@ export default function Leasing() {
           className="max-w-2xl"
         >
           <p className="text-primary font-bold uppercase tracking-widest text-sm mb-3">
-            Financing
+            {t.leasing.label}
           </p>
-          <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none mb-6">
-            Leasing
-            <br />
-            Calculator
+          <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none mb-6 whitespace-pre-line">
+            {t.leasing.title}
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Calculate your monthly payments with our trusted leasing partners.
-            Flexible terms from 12 to 60 months.
-          </p>
+          <p className="text-muted-foreground text-lg">{t.leasing.subtitle}</p>
         </motion.div>
       </div>
 
@@ -63,18 +59,16 @@ export default function Leasing() {
           >
             <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3">
               <Calculator className="h-6 w-6 text-primary" />
-              Calculate
+              {t.leasing.calculate}
             </h2>
 
-            {/* Price */}
+            {/* Price Slider */}
             <div className="mb-8">
               <div className="flex justify-between items-center mb-3">
                 <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                  Product Price
+                  {t.leasing.price}
                 </label>
-                <span className="text-2xl font-black text-white">
-                  €{price.toLocaleString()}
-                </span>
+                <span className="text-2xl font-black text-white">€{price.toLocaleString()}</span>
               </div>
               <Slider
                 min={500}
@@ -90,64 +84,97 @@ export default function Leasing() {
               </div>
             </div>
 
-            {/* Down Payment */}
+            {/* First Payment */}
             <div className="mb-8">
               <div className="flex justify-between items-center mb-3">
                 <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                  Down Payment
+                  {t.leasing.first_payment}
                 </label>
                 <span className="text-xl font-black text-white">
-                  {downPaymentPct}% — €{downPayment.toLocaleString()}
+                  {firstPaymentPct}% — €{firstPayment.toLocaleString()}
                 </span>
               </div>
               <Slider
                 min={0}
                 max={50}
                 step={5}
-                value={[downPaymentPct]}
-                onValueChange={([val]) => setDownPaymentPct(val)}
+                value={[firstPaymentPct]}
+                onValueChange={([val]) => setFirstPaymentPct(val)}
                 className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
               />
               <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                 <span>0%</span>
                 <span>50%</span>
               </div>
+              {/* Manual input */}
+              <div className="flex gap-3 mt-3">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">%</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    step={1}
+                    value={firstPaymentPct}
+                    onChange={(e) => {
+                      const v = Math.max(0, Math.min(50, Number(e.target.value)));
+                      setFirstPaymentPct(v);
+                    }}
+                    className="w-full bg-background border border-border text-white font-bold text-sm px-3 py-2 focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">€</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={price * 0.5}
+                    step={50}
+                    value={firstPayment}
+                    onChange={(e) => {
+                      const euros = Math.max(0, Math.min(price * 0.5, Number(e.target.value)));
+                      setFirstPaymentPct(Math.round((euros / price) * 100));
+                    }}
+                    className="w-full bg-background border border-border text-white font-bold text-sm px-3 py-2 focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Loan Term */}
             <div className="mb-8">
               <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground block mb-3">
-                Lease Term
+                {t.leasing.term}
               </label>
               <div className="flex gap-2">
-                {TERM_OPTIONS.map((t) => (
+                {TERM_OPTIONS.map((tOpt) => (
                   <button
-                    key={t}
-                    onClick={() => setTerm(t)}
+                    key={tOpt}
+                    onClick={() => setTerm(tOpt)}
                     className={`flex-1 py-3 text-sm font-bold border transition-colors ${
-                      term === t
+                      term === tOpt
                         ? "bg-primary border-primary text-white"
                         : "border-border text-muted-foreground hover:border-primary hover:text-primary"
                     }`}
                   >
-                    {t}m
+                    {tOpt}m
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Interest Rate Info */}
+            {/* Interest Rate */}
             <div className="border border-border p-4 mb-8 flex items-center gap-3">
               <Percent className="h-5 w-5 text-primary flex-shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Interest Rate</p>
-                <p className="text-lg font-black text-white">8.9% <span className="font-normal text-sm text-muted-foreground">per annum</span></p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.leasing.interest}</p>
+                <p className="text-lg font-black text-white">8.9% <span className="font-normal text-sm text-muted-foreground">p.a.</span></p>
               </div>
             </div>
 
             <Link href="/contact">
               <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-14 text-base font-bold uppercase tracking-widest">
-                Apply for Leasing
+                {t.leasing.apply}
                 <ChevronRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -163,13 +190,13 @@ export default function Leasing() {
               className="bg-primary p-8 md:p-10"
             >
               <p className="text-white/70 text-sm font-bold uppercase tracking-widest mb-2">
-                Monthly Payment
+                {t.leasing.monthly}
               </p>
               <div className="text-6xl md:text-7xl font-black text-white mb-2">
                 €{monthlyPayment.toFixed(0)}
               </div>
               <p className="text-white/70 text-sm">
-                for {term} months
+                {t.leasing.for_months.replace("{n}", String(term))}
               </p>
             </motion.div>
 
@@ -181,15 +208,15 @@ export default function Leasing() {
               className="bg-card border border-border p-8"
             >
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6">
-                Breakdown
+                {t.leasing.breakdown}
               </h3>
               <div className="space-y-4">
                 {[
-                  { label: "Product Price", value: `€${price.toLocaleString()}` },
-                  { label: "Down Payment", value: `€${downPayment.toLocaleString()} (${downPaymentPct}%)` },
-                  { label: "Financed Amount", value: `€${principal.toLocaleString()}` },
-                  { label: "Total Interest", value: `€${totalInterest.toFixed(0)}` },
-                  { label: "Total Payable", value: `€${totalPayable.toFixed(0)}` },
+                  { label: t.leasing.product_price, value: `€${price.toLocaleString()}` },
+                  { label: t.leasing.down_payment, value: `€${firstPayment.toLocaleString()} (${firstPaymentPct}%)` },
+                  { label: t.leasing.financed, value: `€${principal.toLocaleString()}` },
+                  { label: t.leasing.total_interest, value: `€${totalInterest.toFixed(0)}` },
+                  { label: t.leasing.total_payable, value: `€${totalPayable.toFixed(0)}` },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between items-center border-b border-border pb-3 last:border-0 last:pb-0">
                     <span className="text-muted-foreground text-sm">{label}</span>
@@ -207,7 +234,7 @@ export default function Leasing() {
               className="bg-card border border-border p-8"
             >
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
-                <Building2 className="h-4 w-4" /> Leasing Partners
+                <Building2 className="h-4 w-4" /> {t.leasing.partners_title}
               </h3>
               <div className="space-y-4">
                 {[
@@ -224,9 +251,7 @@ export default function Leasing() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground mt-4">
-                * Calculation is indicative. Final terms are subject to credit approval by the leasing company.
-              </p>
+              <p className="text-xs text-muted-foreground mt-4">{t.leasing.indicative}</p>
             </motion.div>
           </div>
         </div>

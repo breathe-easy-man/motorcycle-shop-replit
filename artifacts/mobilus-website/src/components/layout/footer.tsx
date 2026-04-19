@@ -1,7 +1,43 @@
 import { Link } from "wouter";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export function Footer() {
+  const { t, lang } = useI18n();
+
+  const hours = {
+    lv: { pf: "P–Pk", s: "Sestdiena", sv: "Svētdiena", closed: "Slēgts" },
+    en: { pf: "Mon–Fri", s: "Saturday", sv: "Sunday", closed: "Closed" },
+    ru: { pf: "Пн–Пт", s: "Суббота", sv: "Воскресенье", closed: "Закрыто" },
+  };
+  const h = hours[lang];
+
+  const quickLinks = {
+    lv: { moto: "Moto katalogs", velo: "Velo katalogs", leasing: "Līzinga kalkulators", about: "Par mums" },
+    en: { moto: "Moto Catalog", velo: "Velo Catalog", leasing: "Leasing Calculator", about: "About Us" },
+    ru: { moto: "Мото каталог", velo: "Вело каталог", leasing: "Калькулятор лизинга", about: "О нас" },
+  };
+  const ql = quickLinks[lang];
+
+  const sectionTitles = {
+    lv: { links: "Ātrās saites", contact: "Kontakti", hours: "Darba laiks" },
+    en: { links: "Quick Links", contact: "Contact", hours: "Store Hours" },
+    ru: { links: "Быстрые ссылки", contact: "Контакты", hours: "Часы работы" },
+  };
+  const st = sectionTitles[lang];
+
+  const tagline = {
+    lv: "Latvijas galvenais atpūtas mobilitātes un sporta aprīkojuma pārdevējs.",
+    en: "Latvia's premier retailer of recreational mobility and sports gear.",
+    ru: "Ведущий латвийский ритейлер рекреационной мобильности и спортивного снаряжения.",
+  };
+
+  const privacy = {
+    lv: { pp: "Privātuma politika", tos: "Lietošanas noteikumi" },
+    en: { pp: "Privacy Policy", tos: "Terms of Use" },
+    ru: { pp: "Политика конфиденциальности", tos: "Условия использования" },
+  };
+
   return (
     <footer className="bg-card border-t border-border pt-16 pb-8">
       <div className="container mx-auto px-4 md:px-6">
@@ -13,30 +49,30 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-              Latvia's premier retailer of recreational mobility and sports gear. Find your next adventure with us.
+              {tagline[lang]}
             </p>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">Quick Links</h3>
+            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">{st.links}</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/moto" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">Moto Catalog</Link>
+                <Link href="/moto" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.moto}</Link>
               </li>
               <li>
-                <Link href="/velo" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">Velo Catalog</Link>
+                <Link href="/velo" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.velo}</Link>
               </li>
               <li>
-                <Link href="/leasing" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">Leasing Calculator</Link>
+                <Link href="/leasing" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.leasing}</Link>
               </li>
               <li>
-                <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">About Us</Link>
+                <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.about}</Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">Contact</h3>
+            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">{st.contact}</h3>
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-muted-foreground text-sm">
                 <MapPin size={18} className="text-primary shrink-0 mt-0.5" />
@@ -45,31 +81,31 @@ export function Footer() {
               <li className="flex items-center gap-3 text-muted-foreground text-sm">
                 <Phone size={18} className="text-primary shrink-0" />
                 <div className="flex flex-col">
-                  <span>+371 67 676 402</span>
-                  <span>+371 29 509 623</span>
+                  <a href="tel:+37167676402" className="hover:text-primary transition-colors">+371 67 676 402</a>
+                  <a href="tel:+37129509623" className="hover:text-primary transition-colors">+371 29 509 623</a>
                 </div>
               </li>
               <li className="flex items-center gap-3 text-muted-foreground text-sm">
                 <Mail size={18} className="text-primary shrink-0" />
-                <span>commerce@mobilus.lv</span>
+                <a href="mailto:commerce@mobilus.lv" className="hover:text-primary transition-colors">commerce@mobilus.lv</a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">Store Hours</h3>
+            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">{st.hours}</h3>
             <ul className="space-y-3">
               <li className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Monday - Friday</span>
-                <span className="text-white">10:00 - 19:00</span>
+                <span>{h.pf}</span>
+                <span className="text-white">10:00 – 19:00</span>
               </li>
               <li className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Saturday</span>
-                <span className="text-white">10:00 - 16:00</span>
+                <span>{h.s}</span>
+                <span className="text-white">10:00 – 16:00</span>
               </li>
               <li className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Sunday</span>
-                <span className="text-primary font-medium">Closed</span>
+                <span>{h.sv}</span>
+                <span className="text-primary font-medium">{h.closed}</span>
               </li>
             </ul>
           </div>
@@ -80,8 +116,8 @@ export function Footer() {
             &copy; {new Date().getFullYear()} Mobilus. All rights reserved.
           </p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>Privātuma politika</span>
-            <span>Lietošanas noteikumi</span>
+            <span className="hover:text-primary cursor-pointer transition-colors">{privacy[lang].pp}</span>
+            <span className="hover:text-primary cursor-pointer transition-colors">{privacy[lang].tos}</span>
           </div>
         </div>
       </div>
