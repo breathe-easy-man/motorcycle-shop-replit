@@ -68,7 +68,7 @@ export default function Contact() {
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t.contact.address_label}</p>
                     <p className="font-bold text-white">Rīga, Dārzciema 123</p>
-                    <p className="text-sm text-muted-foreground">Latvia, LV-1073</p>
+                    <p className="text-sm text-muted-foreground">{t.home.country}, LV-1073</p>
                   </div>
                 </div>
 

@@ -13,14 +13,14 @@ const bikes = [
     price: 289,
     category: "City",
     image: "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?q=80&w=800&auto=format&fit=crop",
-    badge: "Popular",
+    badge: null,
   },
   {
     id: 2,
     name: "Trail Blazer MTB 29",
     price: 549,
     category: "Mountain",
-    image: "https://images.unsplash.com/photo-1576435728678-68d0fbf94946?q=80&w=800&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1544191696-102dbdaeeaa0?q=80&w=800&auto=format&fit=crop",
     badge: null,
   },
   {
@@ -29,7 +29,7 @@ const bikes = [
     price: 1290,
     category: "Electric",
     image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=800&auto=format&fit=crop",
-    badge: "Electric",
+    badge: "Elektro",
   },
   {
     id: 4,
@@ -45,7 +45,7 @@ const bikes = [
     price: 149,
     category: "Kids",
     image: "https://images.unsplash.com/photo-1519583272095-6433daf26b6e?q=80&w=800&auto=format&fit=crop",
-    badge: "Kids",
+    badge: null,
   },
   {
     id: 6,
@@ -69,7 +69,7 @@ const bikes = [
     price: 2190,
     category: "Electric",
     image: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?q=80&w=800&auto=format&fit=crop",
-    badge: "Electric",
+    badge: "Elektro",
   },
 ];
 
@@ -77,7 +77,16 @@ export default function Velo() {
   const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const categories = ["All", "City", "Mountain", "Electric", "Kids", "Road"];
+  const categoryKeys = ["All", "City", "Mountain", "Electric", "Kids", "Road"] as const;
+
+  const categoryLabel: Record<string, string> = {
+    All: t.velo.filter_all,
+    City: t.velo.cat_city,
+    Mountain: t.velo.cat_mountain,
+    Electric: t.velo.cat_electric,
+    Kids: t.velo.cat_kids,
+    Road: t.velo.cat_road,
+  };
 
   const filtered =
     activeCategory === "All"
@@ -109,7 +118,7 @@ export default function Velo() {
       <div className="container mx-auto px-4 md:px-6">
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 mb-12">
-          {categories.map((cat) => (
+          {categoryKeys.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -119,7 +128,7 @@ export default function Velo() {
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {cat === "All" ? t.moto.filter_all : cat}
+              {categoryLabel[cat]}
             </button>
           ))}
         </div>
@@ -145,12 +154,16 @@ export default function Velo() {
                   src={bike.image}
                   alt={bike.name}
                   className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop";
+                  }}
                 />
               </div>
               <div className="p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                    {bike.category}
+                    {categoryLabel[bike.category] ?? bike.category}
                   </Badge>
                 </div>
                 <h3 className="font-bold text-foreground text-sm leading-tight mb-3">{bike.name}</h3>
