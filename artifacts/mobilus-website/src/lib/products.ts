@@ -21,7 +21,7 @@ export const products: Product[] = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/sm_F11-B-scaled%20black:blue.jpg",
+    image: "https://www.mobilus.lv/upload/F11-B-black:blue.jpg",
     badge: "-3%",
     description: {
       lv: "Stilīgs un ekonomisks skūteris ikdienas braucieniem pa pilsētu. Kompakts dizains ar jaudīgu 49cc dzinēju.",
@@ -44,7 +44,7 @@ export const products: Product[] = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/sm_F11-G-%20black:green.jpg",
+    image: "https://www.mobilus.lv/upload/F11-G-black:green.jpg",
     badge: "-3%",
     description: {
       lv: "Klasiskā F11 modeļa zaļā versija. Perfekts pilsētas skūteris ar izteiksmīgu krāsu kombināciju.",
@@ -67,7 +67,7 @@ export const products: Product[] = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/sm_Group-3-1.jpeg",
+    image: "https://www.mobilus.lv/upload/Cruise-Silver.jpg",
     badge: "-3%",
     description: {
       lv: "Retro stila krūzera skūteris ar mūsdienīgu tehnoloģiju. Ideāls braucieniem pa pilsētu un priekšpilsētu.",
@@ -90,7 +90,7 @@ export const products: Product[] = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/sm_Screen%20Shot%202019-02-05%20at%2013.46.33.png",
+    image: "https://www.mobilus.lv/upload/R8%20white.png",
     badge: "-3%",
     description: {
       lv: "Elegantais R8 skūteris baltā krāsā — mūsdienīgs dizains un uzticama veiktspēja katru dienu.",
@@ -113,7 +113,7 @@ export const products: Product[] = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/sm_F11-R654-%20Black:Red.jpg",
+    image: "https://www.mobilus.lv/upload/F11-R654-Black:Red.jpg",
     badge: "-3%",
     description: {
       lv: "Agresīvā sarkanmelnā kombinācija padara F11 par izcilu izvēli tiem, kas vēlas izcelties.",
@@ -136,7 +136,7 @@ export const products: Product[] = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/sm_R8%20black%5B14642%5D.jpg",
+    image: "https://www.mobilus.lv/upload/R8%20black.jpg",
     badge: "-3%",
     description: {
       lv: "Melnā R8 — klasisks un bezlaicīgs. Ideāls pilsētas braucējs, kurš nepievilts.",
@@ -159,7 +159,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "Elektro",
     engine: "Electric",
-    image: "https://www.mobilus.lv/upload/sm_max2_800x1200.jpg",
+    image: "https://www.mobilus.lv/upload/large_max2_800x1200.jpg",
     badge: "Elektro",
     description: {
       lv: "Super Soco TC MAx ir jaudīgs elektriskais skūteris ar lielu akumulatoru un iespaidīgu braukšanas diapazonu.",
@@ -182,7 +182,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "Elektro",
     engine: "Electric",
-    image: "https://www.mobilus.lv/upload/sm_tootepilt_TC.jpg",
+    image: "https://www.mobilus.lv/upload/large_tootepilt_TC.jpg",
     badge: "Elektro",
     description: {
       lv: "Super Soco TC ir pilsētas elektriskais skūteris ar lielisku cenas/vērtības attiecību un zero emisijām.",
@@ -205,7 +205,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "Elektro",
     engine: "Electric",
-    image: "https://www.mobilus.lv/upload/sm_Xing%20Mai%2001.jpg",
+    image: "https://www.mobilus.lv/upload/large_Xing%20Mai%2003.jpg",
     badge: "E-Car",
     description: {
       lv: "JonWay Xing Mai ir kompakts elektriskais automobilis, ideāls pilsētas braucieniem ar nulles emisijām.",
@@ -228,7 +228,7 @@ export const products: Product[] = [
     oldPrice: 2500,
     category: "Motocikli",
     engine: "125cc",
-    image: "https://www.mobilus.lv/upload/sm_3840x2400_1321159_www.ArtFile.ru_-scaled.jpg",
+    image: "https://www.mobilus.lv/upload/large_3840x2400_1321159_www.ArtFile.ru_-scaled.jpg",
     badge: "-8%",
     description: {
       lv: "VZ-5 ir sportisks 125cc motocikls, ideāls jaunajiem braucējiem, kuri vēlas kaut ko vairāk par skūteri.",
@@ -251,7 +251,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "ATV",
     engine: "600cc",
-    image: "https://www.mobilus.lv/upload/sm_MY2023_CFORCE%20625_TOURING_Force%20Red_Left%2045_167.jpg",
+    image: "https://www.mobilus.lv/upload/large_MY2023_CFORCE%20625_TOURING_Force%20Red_Left%2045_167.jpg",
     badge: "ATV",
     description: {
       lv: "CFMoto Cforce 625L ir jaudīgs kvadracikls ar 600cc dzinēju, piemērots gan sporta, gan lauksaimniecības vajadzībām.",
@@ -274,7 +274,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "ATV",
     engine: "400cc",
-    image: "https://www.mobilus.lv/upload/sm_CF400AU-3L-S-GREEN-1.jpeg",
+    image: "https://www.mobilus.lv/upload/large_MY2023_CFORCE%20450%20L_Jet%20Black_Left%2045_167.jpg",
     badge: "ATV",
     description: {
       lv: "CFORCE 450L apvieno spēku un manevrētspēju. Ideāls kvadracikls gan pieredzējušiem, gan jauniem braucējiem.",
@@ -297,7 +297,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "ATV",
     engine: "110cc",
-    image: "https://www.mobilus.lv/upload/sm_MY2023_CFORCE%20110_Rocket%20Red_Left%2045_CE.jpg",
+    image: "https://www.mobilus.lv/upload/large_MY2023_CFORCE%20110_Rocket%20Red_Left%2045_CE.jpg",
     badge: "Youth",
     description: {
       lv: "CFMoto 110 Youth ir drošs un jautrs kvadracikls bērniem un pusaudžiem, lai iepazītos ar ATV braukšanu.",
@@ -320,7 +320,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "ATV",
     engine: "110cc",
-    image: "https://www.mobilus.lv/upload/sm_110%20cvt%2001%20.png",
+    image: "https://www.mobilus.lv/upload/large_110%20cvt%2001%20.png",
     badge: "Kids",
     description: {
       lv: "Pentora 110 CVT — bērnu ATV ar automātisko pārnesumkārbu (CVT), ērti vadāms un drošs.",
@@ -343,7 +343,7 @@ export const products: Product[] = [
     oldPrice: null,
     category: "ATV",
     engine: "110cc",
-    image: "https://www.mobilus.lv/upload/sm_KAYO%20AT110%201.jpeg",
+    image: "https://www.mobilus.lv/upload/large_KAYO_Warrior_110_II_ATV_Orange4.jpeg",
     badge: "Kids",
     description: {
       lv: "Kayo 110 Kid ir izcils sākumpunkts jaunajiem ATV entuziastiem. Uzticams, drošs un viegli vadāms.",
