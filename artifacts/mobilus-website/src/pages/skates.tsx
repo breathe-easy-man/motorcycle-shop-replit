@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link, useSearch } from "wouter";
+import { Link } from "wouter";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -16,15 +16,14 @@ interface Product {
   engine: string | null;
   badge: string | null;
   image: string;
-  description: string | null;
   stock: number;
 }
 
-export default function Moto() {
-  const { t } = useI18n();
-  const search = useSearch();
-  const categoryParam = new URLSearchParams(search).get("category");
-  const [activeCategory, setActiveCategory] = useState(categoryParam ?? t.moto.filter_all);
+const SKATE_CATEGORIES = ["Skrituļslidas"];
+
+export default function Skates() {
+  const { t, lang } = useI18n();
+  const [activeCategory, setActiveCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,22 +32,30 @@ export default function Moto() {
       .then((r) => r.json())
       .then((data) => {
         const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
-        setProducts(list);
+        setProducts(list.filter((p) => SKATE_CATEGORIES.includes(p.category)));
       })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const MOTO_CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV"];
+  const engineLabel: Record<string, string> = {
+    Rekreācija: lang === "lv" ? "Rekreācija" : lang === "ru" ? "Рекреация" : "Recreation",
+    Fitness: "Fitness",
+    Bērnu: lang === "lv" ? "Bērniem" : lang === "ru" ? "Детские" : "Kids",
+  };
 
-  const categories = [t.moto.filter_all, ...MOTO_CATEGORIES];
-
-  const motoProducts = products.filter((p) => MOTO_CATEGORIES.includes(p.category));
+  const filterEngines = ["All", "Rekreācija", "Fitness", "Bērnu"];
+  const filterLabel: Record<string, string> = {
+    All: lang === "lv" ? "Visi" : lang === "ru" ? "Все" : "All",
+    Rekreācija: lang === "lv" ? "Rekreācija" : lang === "ru" ? "Рекреация" : "Recreation",
+    Fitness: "Fitness",
+    Bērnu: lang === "lv" ? "Bērniem" : lang === "ru" ? "Детские" : "Kids",
+  };
 
   const filtered =
-    activeCategory === t.moto.filter_all || !MOTO_CATEGORIES.includes(activeCategory)
-      ? motoProducts
-      : motoProducts.filter((p) => p.category === activeCategory);
+    activeCategory === "All"
+      ? products
+      : products.filter((p) => p.engine === activeCategory);
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-background">
@@ -56,13 +63,9 @@ export default function Moto() {
       <div className="relative h-64 md:h-80 overflow-hidden mb-16">
         <div className="absolute inset-0 bg-black/60 z-10" />
         <img
-          src="https://www.mobilus.lv/img/main/moto_lv.png"
-          alt="Moto"
+          src="https://images.unsplash.com/photo-1520045892732-304bc3ac5d8e?q=80&w=2070&auto=format&fit=crop"
+          alt="Skrituļslidas"
           className="absolute inset-0 w-full h-full object-cover object-center"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=2070&auto=format&fit=crop";
-          }}
         />
         <div className="absolute inset-0 z-20 flex flex-col justify-end container mx-auto px-4 md:px-6 pb-12">
           <motion.h1
@@ -70,16 +73,18 @@ export default function Moto() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter"
           >
-            {t.moto.title}
+            {lang === "lv" ? "Skrituļslidas" : lang === "ru" ? "Роликовые коньки" : "Inline Skates"}
           </motion.h1>
-          <p className="text-muted-foreground text-lg mt-2">{t.moto.subtitle}</p>
+          <p className="text-muted-foreground text-lg mt-2">
+            {lang === "lv" ? "Rollerblade, K2, Fila — labākie brendai Latvijā" : lang === "ru" ? "Rollerblade, K2, Fila — лучшие бренды в Латвии" : "Rollerblade, K2, Fila — top brands in Latvia"}
+          </p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 md:px-6">
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 mb-12">
-          {categories.map((cat) => (
+          {filterEngines.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -89,14 +94,14 @@ export default function Moto() {
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {cat}
+              {filterLabel[cat]}
             </button>
           ))}
         </div>
 
         {/* Products Grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-32">
+          <div className="flex items-center justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
@@ -110,58 +115,38 @@ export default function Moto() {
                 transition={{ delay: i * 0.05 }}
                 className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
               >
-                <Link href={`/moto/${product.slug}`} className="block">
-                  <div className="relative overflow-hidden aspect-[4/3] bg-muted cursor-pointer">
-                    {product.badge && (
-                      <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
-                        {product.badge}
-                      </span>
-                    )}
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop";
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-primary px-4 py-2">
-                        {t.moto.view_details}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                <div className="relative overflow-hidden aspect-[4/3] bg-muted">
+                  {product.badge && (
+                    <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
+                      {product.badge}
+                    </span>
+                  )}
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://images.unsplash.com/photo-1520045892732-304bc3ac5d8e?q=80&w=800&auto=format&fit=crop";
+                    }}
+                  />
+                </div>
                 <div className="p-5">
                   <div className="flex items-center gap-2 mb-2">
-                    {product.engine && (
-                      <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                        {product.engine}
-                      </Badge>
-                    )}
                     <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                      {product.category}
+                      {engineLabel[product.engine ?? ""] ?? product.engine}
                     </Badge>
                   </div>
-                  <h3 className="font-bold text-foreground text-sm leading-tight mb-3">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <span className="text-xl font-black text-primary">
-                        €{product.price.toLocaleString()}
-                      </span>
-                      {product.oldPrice && (
-                        <span className="ml-2 text-sm text-muted-foreground line-through">
-                          €{product.oldPrice.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
+                  <h3 className="font-bold text-foreground text-sm leading-tight mb-3">{product.name}</h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-xl font-black text-primary">€{product.price.toLocaleString()}</span>
+                    {product.oldPrice && (
+                      <span className="text-sm text-muted-foreground line-through">€{product.oldPrice.toLocaleString()}</span>
+                    )}
                   </div>
-                  <Link href={`/moto/${product.slug}`}>
+                  <Link href={`/skates/${product.slug}`}>
                     <Button className="w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
-                      {t.moto.view_details} <ChevronRight className="ml-1 h-3 w-3" />
+                      {lang === "lv" ? "Skatīt" : lang === "ru" ? "Смотреть" : "View"}
                     </Button>
                   </Link>
                 </div>
@@ -170,17 +155,19 @@ export default function Moto() {
           </div>
         )}
 
-        {/* Leasing CTA */}
+        {/* Info Banner */}
         <div className="mt-20 border border-border p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 bg-card">
           <div>
             <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">
-              {t.moto.finance}
+              {lang === "lv" ? "Jautājumi? Mēs palīdzēsim!" : lang === "ru" ? "Вопросы? Мы поможем!" : "Questions? We'll help!"}
             </h2>
-            <p className="text-muted-foreground">{t.moto.finance_sub}</p>
+            <p className="text-muted-foreground">
+              {lang === "lv" ? "Sazinieties ar mums un izvēlieties piemērotākās skrituļslidas." : lang === "ru" ? "Свяжитесь с нами и выберите подходящие ролики." : "Contact us and we'll help you choose the right skates."}
+            </p>
           </div>
-          <Link href="/leasing">
+          <Link href="/contact">
             <Button className="bg-primary hover:bg-primary/90 text-white rounded-none px-8 uppercase font-bold tracking-widest whitespace-nowrap">
-              {t.moto.leasing_calc} <ChevronRight className="ml-2 h-4 w-4" />
+              {lang === "lv" ? "Sazināties" : lang === "ru" ? "Связаться" : "Contact Us"} <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>

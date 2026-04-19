@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -52,7 +52,21 @@ const FALLBACK_IMAGES: Record<string, string> = {
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [location] = useLocation();
   const { t, lang } = useI18n();
+
+  const parentSection = location.startsWith("/velo/") ? "velo"
+    : location.startsWith("/skates/") ? "skates"
+    : location.startsWith("/winter/") ? "winter"
+    : "moto";
+
+  const parentLabel =
+    parentSection === "velo" ? (lang === "lv" ? "Velo" : lang === "ru" ? "Vело" : "Velo")
+    : parentSection === "skates" ? (lang === "lv" ? "Skrituļslidas" : lang === "ru" ? "Ролики" : "Skates")
+    : parentSection === "winter" ? (lang === "lv" ? "Ziemas Sports" : lang === "ru" ? "Зимний спорт" : "Winter Sports")
+    : "Moto";
+
+  const parentHref = `/${parentSection}`;
 
   const [product, setProduct] = useState<ProductFromAPI | null>(null);
   const [related, setRelated] = useState<ProductFromAPI[]>([]);
@@ -115,8 +129,8 @@ export default function ProductPage() {
     return (
       <div className="pt-32 pb-20 container mx-auto px-4 text-center">
         <h1 className="text-4xl font-black text-white mb-4">Produkts nav atrasts</h1>
-        <Link href="/moto">
-          <Button className="bg-primary text-white rounded-none">← Atpakaļ uz Moto</Button>
+        <Link href={parentHref}>
+          <Button className="bg-primary text-white rounded-none">← {lang === "lv" ? "Atpakaļ" : lang === "ru" ? "Назад" : "Back"}</Button>
         </Link>
       </div>
     );
@@ -158,7 +172,7 @@ export default function ProductPage() {
             {lang === "lv" ? "Sākums" : lang === "ru" ? "Главная" : "Home"}
           </Link>
           <ChevronRight className="h-3 w-3" />
-          <Link href="/moto" className="hover:text-primary transition-colors">Moto</Link>
+          <Link href={parentHref} className="hover:text-primary transition-colors">{parentLabel}</Link>
           <ChevronRight className="h-3 w-3" />
           <span className="text-primary">{product.name}</span>
         </nav>

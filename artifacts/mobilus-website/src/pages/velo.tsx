@@ -1,97 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
-const bikes = [
-  {
-    id: 1,
-    name: "Urban Glide Pro 28\"",
-    price: 289,
-    category: "City",
-    image: "https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?q=80&w=800&auto=format&fit=crop",
-    badge: null,
-  },
-  {
-    id: 2,
-    name: "Trail Blazer MTB 29",
-    price: 549,
-    category: "Mountain",
-    image: "https://images.unsplash.com/photo-1544191696-102dbdaeeaa0?q=80&w=800&auto=format&fit=crop",
-    badge: null,
-  },
-  {
-    id: 3,
-    name: "E-City Commuter 250W",
-    price: 1290,
-    category: "Electric",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=800&auto=format&fit=crop",
-    badge: "Elektro",
-  },
-  {
-    id: 4,
-    name: "Speed Road Carbon",
-    price: 899,
-    category: "Road",
-    image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=800&auto=format&fit=crop",
-    badge: null,
-  },
-  {
-    id: 5,
-    name: "Kids Ranger 20\"",
-    price: 149,
-    category: "Kids",
-    image: "https://images.unsplash.com/photo-1519583272095-6433daf26b6e?q=80&w=800&auto=format&fit=crop",
-    badge: null,
-  },
-  {
-    id: 6,
-    name: "Gravel Master X1",
-    price: 749,
-    category: "Mountain",
-    image: "https://images.unsplash.com/photo-1502743780242-f10d2ce370f3?q=80&w=800&auto=format&fit=crop",
-    badge: null,
-  },
-  {
-    id: 7,
-    name: "Retro City Cruiser",
-    price: 399,
-    category: "City",
-    image: "https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=800&auto=format&fit=crop",
-    badge: "New",
-  },
-  {
-    id: 8,
-    name: "E-Mountain Trail 500W",
-    price: 2190,
-    category: "Electric",
-    image: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?q=80&w=800&auto=format&fit=crop",
-    badge: "Elektro",
-  },
-];
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  oldPrice: number | null;
+  engine: string | null;
+  badge: string | null;
+  image: string;
+  stock: number;
+}
+
+const VELO_CATEGORIES = ["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"];
 
 export default function Velo() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [activeCategory, setActiveCategory] = useState("All");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categoryKeys = ["All", "City", "Mountain", "Electric", "Kids", "Road"] as const;
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data) => {
+        const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
+        setProducts(list.filter((p) => VELO_CATEGORIES.includes(p.category)));
+      })
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const categoryLabel: Record<string, string> = {
     All: t.velo.filter_all,
-    City: t.velo.cat_city,
-    Mountain: t.velo.cat_mountain,
-    Electric: t.velo.cat_electric,
-    Kids: t.velo.cat_kids,
-    Road: t.velo.cat_road,
+    Pilsēta: t.velo.cat_city,
+    Kalns: t.velo.cat_mountain,
+    "E-Velo": t.velo.cat_electric,
+    Bērniem: t.velo.cat_kids,
+    Šoseja: t.velo.cat_road,
   };
+
+  const filterKeys = ["All", ...VELO_CATEGORIES];
 
   const filtered =
     activeCategory === "All"
-      ? bikes
-      : bikes.filter((b) => b.category === activeCategory);
+      ? products
+      : products.filter((p) => p.category === activeCategory);
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-background">
@@ -118,7 +79,7 @@ export default function Velo() {
       <div className="container mx-auto px-4 md:px-6">
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 mb-12">
-          {categoryKeys.map((cat) => (
+          {filterKeys.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -128,57 +89,66 @@ export default function Velo() {
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {categoryLabel[cat]}
+              {categoryLabel[cat] ?? cat}
             </button>
           ))}
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((bike, i) => (
-            <motion.div
-              key={bike.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
-            >
-              <div className="relative overflow-hidden aspect-[4/3] bg-muted">
-                {bike.badge && (
-                  <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
-                    {bike.badge}
-                  </span>
-                )}
-                <img
-                  src={bike.image}
-                  alt={bike.name}
-                  className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop";
-                  }}
-                />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                    {categoryLabel[bike.category] ?? bike.category}
-                  </Badge>
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filtered.map((bike, i) => (
+              <motion.div
+                key={bike.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
+              >
+                <div className="relative overflow-hidden aspect-[4/3] bg-muted">
+                  {bike.badge && (
+                    <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
+                      {bike.badge}
+                    </span>
+                  )}
+                  <img
+                    src={bike.image}
+                    alt={bike.name}
+                    className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800&auto=format&fit=crop";
+                    }}
+                  />
                 </div>
-                <h3 className="font-bold text-foreground text-sm leading-tight mb-3">{bike.name}</h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-black text-primary">€{bike.price.toLocaleString()}</span>
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
+                      {categoryLabel[bike.category] ?? bike.category}
+                    </Badge>
+                  </div>
+                  <h3 className="font-bold text-foreground text-sm leading-tight mb-3">{bike.name}</h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-xl font-black text-primary">€{bike.price.toLocaleString()}</span>
+                    {bike.oldPrice && (
+                      <span className="text-sm text-muted-foreground line-through">€{bike.oldPrice.toLocaleString()}</span>
+                    )}
+                  </div>
+                  <Link href={`/velo/${bike.slug}`}>
+                    <Button className="w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
+                      {lang === "lv" ? "Skatīt" : lang === "ru" ? "Смотреть" : "View"}
+                    </Button>
+                  </Link>
                 </div>
-                <Link href="/contact">
-                  <Button className="mt-4 w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
-                    {t.velo.inquire}
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* Info Banner */}
         <div className="mt-20 border border-border p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 bg-card">

@@ -23,7 +23,7 @@ export default function Home() {
     {
       title: t.home.cat_skates,
       desc: t.home.cat_skates_desc,
-      href: "/contact",
+      href: "/skates",
       image: "https://images.unsplash.com/photo-1520045892732-304bc3ac5d8e?q=80&w=2070&auto=format&fit=crop",
     },
     {
@@ -35,7 +35,7 @@ export default function Home() {
     {
       title: t.home.cat_winter,
       desc: t.home.cat_winter_desc,
-      href: "/contact",
+      href: "/winter",
       image: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=2070&auto=format&fit=crop",
     },
   ];

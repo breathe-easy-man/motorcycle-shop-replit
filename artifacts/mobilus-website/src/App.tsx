@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Moto from "@/pages/moto";
 import Velo from "@/pages/velo";
+import Skates from "@/pages/skates";
+import Winter from "@/pages/winter";
 import Contact from "@/pages/contact";
 import Leasing from "@/pages/leasing";
 import About from "@/pages/about";
@@ -44,6 +46,11 @@ function Router() {
             <Route path="/moto" component={Moto} />
             <Route path="/moto/:slug" component={ProductPage} />
             <Route path="/velo" component={Velo} />
+            <Route path="/velo/:slug" component={ProductPage} />
+            <Route path="/skates" component={Skates} />
+            <Route path="/skates/:slug" component={ProductPage} />
+            <Route path="/winter" component={Winter} />
+            <Route path="/winter/:slug" component={ProductPage} />
             <Route path="/contact" component={Contact} />
             <Route path="/leasing" component={Leasing} />
             <Route path="/about" component={About} />
