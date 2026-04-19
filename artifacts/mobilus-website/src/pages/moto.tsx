@@ -2,14 +2,16 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { ChevronRight } from "lucide-react";
 import { products } from "@/lib/products";
 import { useI18n } from "@/lib/i18n";
 
 export default function Moto() {
   const { t, lang } = useI18n();
-  const [activeCategory, setActiveCategory] = useState("All");
+  const search = useSearch();
+  const categoryParam = new URLSearchParams(search).get("category");
+  const [activeCategory, setActiveCategory] = useState(categoryParam ?? t.moto.filter_all);
 
   const categories = [
     t.moto.filter_all,
@@ -20,7 +22,7 @@ export default function Moto() {
   ];
 
   const filtered =
-    activeCategory === t.moto.filter_all
+    activeCategory === t.moto.filter_all || !categories.includes(activeCategory)
       ? products
       : products.filter((p) => p.category === activeCategory);
 

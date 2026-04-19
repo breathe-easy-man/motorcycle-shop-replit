@@ -81,7 +81,7 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/moto">
+            <Link href="/moto?category=Motocikli">
               <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg font-bold uppercase tracking-wider bg-primary hover:bg-primary/90 text-white rounded-none">
                 {t.home.explore_moto}
                 <ChevronRight className="ml-2 h-5 w-5" />
