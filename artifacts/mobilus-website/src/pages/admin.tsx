@@ -1,19 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
-import { api, type ApiProduct, type ApiReview, type ApiInquiry } from "@/lib/api";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Pencil, Trash2, LogOut, Save, X, Package,
   ChevronUp, ChevronDown, Search, Star, MessageSquare,
-  CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle
+  CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette
 } from "lucide-react";
 
 const STORAGE_KEY = "mobilus_admin_key";
 const CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV", "Velo", "Skrituļslidas", "Slēpes", "Snoubords"];
 
-type FormState = Omit<ApiProduct, "id" | "createdAt" | "updatedAt">;
+type FormState = Omit<ApiProductInput, "variants">;
 type AdminTab = "products" | "reviews" | "inquiries";
+
+type VariantFormItem = {
+  id?: number;
+  colorName: string;
+  colorHex: string;
+  image: string;
+  stock: number;
+};
 
 const emptyForm = (): FormState => ({
   slug: "",
@@ -64,9 +72,10 @@ export default function AdminPage() {
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [editing, setEditing] = useState<ApiProduct | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [variantItems, setVariantItems] = useState<VariantFormItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [activeFormTab, setActiveFormTab] = useState<"basic" | "desc" | "specs" | "manufacturer">("basic");
+  const [activeFormTab, setActiveFormTab] = useState<"basic" | "desc" | "specs" | "manufacturer" | "variants">("basic");
 
   const [deleteConfirm, setDeleteConfirm] = useState<ApiProduct | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -154,6 +163,7 @@ export default function AdminPage() {
 
   function openAdd() {
     setForm(emptyForm());
+    setVariantItems([]);
     setEditing(null);
     setFormError("");
     setActiveFormTab("basic");
@@ -172,13 +182,32 @@ export default function AdminPage() {
       manufacturerDescEn: p.manufacturerDescEn ?? null,
       manufacturerDescRu: p.manufacturerDescRu ?? null,
     });
+    setVariantItems((p.variants ?? []).map((v) => ({
+      id: v.id,
+      colorName: v.colorName,
+      colorHex: v.colorHex ?? "",
+      image: v.image,
+      stock: v.stock,
+    })));
     setEditing(p);
     setFormError("");
     setActiveFormTab("basic");
     setModal("edit");
   }
 
-  function closeModal() { setModal(null); setEditing(null); setFormError(""); }
+  function closeModal() { setModal(null); setEditing(null); setFormError(""); setVariantItems([]); }
+
+  function addVariant() {
+    setVariantItems((v) => [...v, { colorName: "", colorHex: "", image: "", stock: 0 }]);
+  }
+
+  function removeVariant(i: number) {
+    setVariantItems((v) => v.filter((_, idx) => idx !== i));
+  }
+
+  function updateVariant(i: number, field: keyof VariantFormItem, val: string | number) {
+    setVariantItems((v) => v.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
+  }
 
   function setField<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm((f) => {
@@ -225,11 +254,18 @@ export default function AdminPage() {
     setSaving(true);
     setFormError("");
     try {
+      const variantsPayload: ApiVariantInput[] = variantItems.map((v) => ({
+        colorName: v.colorName,
+        colorHex: v.colorHex || null,
+        image: v.image,
+        stock: v.stock,
+      }));
+      const payload: ApiProductInput = { ...form, variants: variantsPayload };
       if (modal === "add") {
-        const created = await api.products.create(form, adminKey);
+        const created = await api.products.create(payload, adminKey);
         setProducts((p) => [...p, created]);
       } else if (editing) {
-        const updated = await api.products.update(editing.id, form, adminKey);
+        const updated = await api.products.update(editing.id, payload, adminKey);
         setProducts((p) => p.map((x) => (x.id === updated.id ? updated : x)));
       }
       closeModal();
@@ -678,15 +714,16 @@ export default function AdminPage() {
             </div>
 
             {/* Form tabs */}
-            <div className="flex border-b border-white/10">
+            <div className="flex border-b border-white/10 overflow-x-auto">
               {([
                 { key: "basic" as const, label: "Basic Info" },
                 { key: "desc" as const, label: "Descriptions" },
                 { key: "specs" as const, label: `Specs (${form.specs.length})` },
+                { key: "variants" as const, label: `Colors (${variantItems.length})` },
                 { key: "manufacturer" as const, label: "Manufacturer" },
               ]).map(({ key, label }) => (
                 <button key={key} onClick={() => setActiveFormTab(key)}
-                  className={`px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+                  className={`flex-shrink-0 px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
                     activeFormTab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-white"
                   }`}
                 >
@@ -829,6 +866,110 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {/* Color Variants */}
+              {activeFormTab === "variants" && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Add color variants with individual images and stock counts. Leave empty for single-color products.
+                      </p>
+                    </div>
+                    <Button onClick={addVariant} size="sm" className="rounded-none bg-primary hover:bg-primary/90 flex-shrink-0 ml-4">
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add Color
+                    </Button>
+                  </div>
+
+                  {variantItems.length === 0 ? (
+                    <div className="text-center py-10 border border-dashed border-white/20">
+                      <Palette className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">No color variants. Click "Add Color" to start.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {variantItems.map((v, i) => (
+                        <div key={i} className="border border-white/10 p-4 bg-white/3">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              {v.colorHex && (
+                                <span
+                                  className="h-4 w-4 rounded-full border border-white/30 flex-shrink-0"
+                                  style={{ backgroundColor: v.colorHex }}
+                                />
+                              )}
+                              <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                                Color #{i + 1} {v.colorName && `— ${v.colorName}`}
+                              </span>
+                            </div>
+                            <button onClick={() => removeVariant(i)} className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-red-400">
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-muted-foreground mb-1">Color Name *</label>
+                              <Input
+                                value={v.colorName}
+                                onChange={(e) => updateVariant(i, "colorName", e.target.value)}
+                                className="rounded-none text-sm h-8"
+                                placeholder="Black/Blue"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-muted-foreground mb-1">Color Hex (optional)</label>
+                              <div className="flex gap-2">
+                                <Input
+                                  value={v.colorHex}
+                                  onChange={(e) => updateVariant(i, "colorHex", e.target.value)}
+                                  className="rounded-none text-sm h-8 font-mono flex-1"
+                                  placeholder="#1a3a5c"
+                                />
+                                {v.colorHex && (
+                                  <span
+                                    className="h-8 w-8 rounded-none border border-white/20 flex-shrink-0"
+                                    style={{ backgroundColor: v.colorHex }}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                            <div className="col-span-2">
+                              <label className="block text-xs text-muted-foreground mb-1">Image URL *</label>
+                              <div className="flex gap-2 items-start">
+                                <Input
+                                  value={v.image}
+                                  onChange={(e) => updateVariant(i, "image", e.target.value)}
+                                  className="rounded-none text-sm h-8 font-mono flex-1"
+                                  placeholder="https://..."
+                                />
+                                {v.image && (
+                                  <img
+                                    src={v.image}
+                                    alt="preview"
+                                    className="h-8 w-12 object-contain bg-white/5 flex-shrink-0"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
+                                    referrerPolicy="no-referrer"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-muted-foreground mb-1">Stock</label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={v.stock}
+                                onChange={(e) => updateVariant(i, "stock", Number(e.target.value))}
+                                className="rounded-none text-sm h-8"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Manufacturer */}
               {activeFormTab === "manufacturer" && (
                 <div className="space-y-4">
@@ -881,7 +1022,7 @@ export default function AdminPage() {
 
             <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/10">
               <p className="text-xs text-muted-foreground">
-                {form.specs.length} spec{form.specs.length !== 1 ? "s" : ""} · {form.image ? "Image set" : "No image"}
+                {form.specs.length} spec{form.specs.length !== 1 ? "s" : ""} · {variantItems.length} color{variantItems.length !== 1 ? "s" : ""} · {form.image ? "Image set" : "No image"}
               </p>
               <div className="flex gap-3">
                 <Button variant="ghost" onClick={closeModal} disabled={saving}>Cancel</Button>

@@ -1,3 +1,19 @@
+export interface ApiProductVariant {
+  id: number;
+  productId: number;
+  colorName: string;
+  colorHex: string | null;
+  image: string;
+  stock: number;
+  createdAt: string;
+}
+
+export type ApiVariantInput = Omit<ApiProductVariant, "id" | "productId" | "createdAt">;
+
+export type ApiProductInput = Omit<ApiProduct, "id" | "createdAt" | "updatedAt" | "variants"> & {
+  variants?: ApiVariantInput[];
+};
+
 export interface ApiProduct {
   id: number;
   slug: string;
@@ -18,6 +34,7 @@ export interface ApiProduct {
   manufacturerDescLv: string | null;
   manufacturerDescEn: string | null;
   manufacturerDescRu: string | null;
+  variants: ApiProductVariant[];
   createdAt: string;
   updatedAt: string;
 }
@@ -68,13 +85,13 @@ export const api = {
   products: {
     list: () => request<ApiProduct[]>("/products"),
     getBySlug: (slug: string) => request<ApiProduct>(`/products/slug/${slug}`),
-    create: (data: Omit<ApiProduct, "id" | "createdAt" | "updatedAt">, key: string) =>
+    create: (data: ApiProductInput, key: string) =>
       request<ApiProduct>("/products", {
         method: "POST",
         headers: adminHeaders(key),
         body: JSON.stringify(data),
       }),
-    update: (id: number, data: Partial<ApiProduct>, key: string) =>
+    update: (id: number, data: Partial<ApiProductInput>, key: string) =>
       request<ApiProduct>(`/products/${id}`, {
         method: "PUT",
         headers: adminHeaders(key),
@@ -82,6 +99,25 @@ export const api = {
       }),
     delete: (id: number, key: string) =>
       request<{ success: boolean }>(`/products/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(key),
+      }),
+  },
+  variants: {
+    create: (productId: number, data: Omit<ApiProductVariant, "id" | "productId" | "createdAt">, key: string) =>
+      request<ApiProductVariant>(`/products/${productId}/variants`, {
+        method: "POST",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    update: (productId: number, variantId: number, data: Partial<ApiProductVariant>, key: string) =>
+      request<ApiProductVariant>(`/products/${productId}/variants/${variantId}`, {
+        method: "PUT",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    delete: (productId: number, variantId: number, key: string) =>
+      request<{ success: boolean }>(`/products/${productId}/variants/${variantId}`, {
         method: "DELETE",
         headers: adminHeaders(key),
       }),

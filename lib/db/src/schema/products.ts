@@ -38,6 +38,27 @@ export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type UpdateProduct = z.infer<typeof updateProductSchema>;
 export type Product = typeof productsTable.$inferSelect;
 
+export const productVariantsTable = pgTable("product_variants", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => productsTable.id, { onDelete: "cascade" }),
+  colorName: text("color_name").notNull(),
+  colorHex: text("color_hex"),
+  image: text("image").notNull(),
+  stock: integer("stock").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertProductVariantSchema = createInsertSchema(productVariantsTable).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateProductVariantSchema = insertProductVariantSchema.partial();
+
+export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
+export type UpdateProductVariant = z.infer<typeof updateProductVariantSchema>;
+export type ProductVariant = typeof productVariantsTable.$inferSelect;
+
 export const reviewsTable = pgTable("reviews", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").notNull(),

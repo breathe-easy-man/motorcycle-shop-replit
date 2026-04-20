@@ -1,16 +1,17 @@
-import { db, productsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, productsTable, productVariantsTable } from "@workspace/db";
 
 const products = [
   {
-    slug: "zn50qt-34-f11-black-blue",
-    name: "ZN50QT-34 (F11) BLACK/Blue",
+    slug: "zn50qt-34-f11",
+    name: "ZN50QT-34 (F11)",
     price: 1950,
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/F11-B-black:blue.jpg",
+    image: "https://www.familygokarts.com/wp-content/uploads/product-images/amigo/am-zn50qt-g/am-zn50qt-g-black-600x600.jpg",
     badge: "-3%",
-    stock: 5,
+    stock: 11,
     descriptionLv: "Stilīgs un ekonomisks skūteris ikdienas braucieniem pa pilsētu. Kompakts dizains ar jaudīgu 49cc dzinēju.",
     descriptionEn: "Stylish and economical scooter for everyday city rides. Compact design with a powerful 49cc engine.",
     descriptionRu: "Стильный и экономичный скутер для ежедневных поездок по городу. Компактный дизайн с мощным двигателем 49cc.",
@@ -21,26 +22,10 @@ const products = [
       { label: { lv: "Degvielas tvertne", en: "Fuel Tank", ru: "Бак" }, value: "5.5 L" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
-  },
-  {
-    slug: "zn50qt-34-f11-black-green",
-    name: "ZN50QT-34 (F11) BLACK/Green",
-    price: 1950,
-    oldPrice: 2000,
-    category: "Skūteri",
-    engine: "49cc",
-    image: "https://www.mobilus.lv/upload/F11-G-black:green.jpg",
-    badge: "-3%",
-    stock: 3,
-    descriptionLv: "Klasiskā F11 modeļa zaļā versija. Perfekts pilsētas skūteris ar izteiksmīgu krāsu kombināciju.",
-    descriptionEn: "Green version of the classic F11 model. Perfect city scooter with an expressive color combination.",
-    descriptionRu: "Зелёная версия классической модели F11. Идеальный городской скутер с выразительной цветовой комбинацией.",
-    specs: [
-      { label: { lv: "Dzinējs", en: "Engine", ru: "Двигатель" }, value: "49cc 4-stroke" },
-      { label: { lv: "Ātrums maks.", en: "Max Speed", ru: "Макс. скорость" }, value: "45 km/h" },
-      { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "95 kg" },
-      { label: { lv: "Degvielas tvertne", en: "Fuel Tank", ru: "Бак" }, value: "5.5 L" },
-      { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
+    variants: [
+      { colorName: "Black/Blue", colorHex: "#1a3a5c", image: "https://www.familygokarts.com/wp-content/uploads/product-images/amigo/am-zn50qt-g/am-zn50qt-g-black-600x600.jpg", stock: 5 },
+      { colorName: "Black/Green", colorHex: "#2d5a1b", image: "https://sportbike.lv/wp-content/uploads/2020/07/F11-Green-z-1.jpg", stock: 3 },
+      { colorName: "Black/Red", colorHex: "#8b1a1a", image: "https://images.unsplash.com/photo-1647250671958-51d5d68cefc5?q=80&w=900&auto=format&fit=crop", stock: 3 },
     ],
   },
   {
@@ -50,7 +35,7 @@ const products = [
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/Cruise-Silver.jpg",
+    image: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=900&auto=format&fit=crop",
     badge: "-3%",
     stock: 2,
     descriptionLv: "Retro stila krūzera skūteris ar mūsdienīgu tehnoloģiju. Ideāls braucieniem pa pilsētu un priekšpilsētu.",
@@ -62,65 +47,30 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "98 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
-    slug: "znen-zn50qt-r8-49cc-white",
-    name: "Znen ZN50QT-R8 49cc White",
+    slug: "znen-zn50qt-r8-49cc",
+    name: "Znen ZN50QT-R8 49cc",
     price: 1950,
     oldPrice: 2000,
     category: "Skūteri",
     engine: "49cc",
-    image: "https://www.mobilus.lv/upload/R8%20white.png",
+    image: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d8?q=80&w=900&auto=format&fit=crop",
     badge: "-3%",
-    stock: 4,
-    descriptionLv: "Elegantais R8 skūteris baltā krāsā — mūsdienīgs dizains un uzticama veiktspēja katru dienu.",
-    descriptionEn: "The elegant R8 scooter in white — modern design and reliable daily performance.",
-    descriptionRu: "Элегантный скутер R8 белого цвета — современный дизайн и надёжные характеристики на каждый день.",
+    stock: 6,
+    descriptionLv: "Elegantais R8 skūteris — mūsdienīgs dizains un uzticama veiktspēja katru dienu.",
+    descriptionEn: "The elegant R8 scooter — modern design and reliable daily performance.",
+    descriptionRu: "Элегантный скутер R8 — современный дизайн и надёжные характеристики на каждый день.",
     specs: [
       { label: { lv: "Dzinējs", en: "Engine", ru: "Двигатель" }, value: "49cc 4-stroke" },
       { label: { lv: "Ātrums maks.", en: "Max Speed", ru: "Макс. скорость" }, value: "45 km/h" },
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "92 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
-  },
-  {
-    slug: "zn50qt-34-f11-black-red",
-    name: "ZN50QT-34 (F11) BLACK/Red",
-    price: 1950,
-    oldPrice: 2000,
-    category: "Skūteri",
-    engine: "49cc",
-    image: "https://www.mobilus.lv/upload/F11-R654-Black:Red.jpg",
-    badge: "-3%",
-    stock: 3,
-    descriptionLv: "Agresīvā sarkanmelnā kombinācija padara F11 par izcilu izvēli tiem, kas vēlas izcelties.",
-    descriptionEn: "The aggressive red-black combination makes the F11 an outstanding choice for those who want to stand out.",
-    descriptionRu: "Агрессивная комбинация красного и чёрного делает F11 отличным выбором для тех, кто хочет выделиться.",
-    specs: [
-      { label: { lv: "Dzinējs", en: "Engine", ru: "Двигатель" }, value: "49cc 4-stroke" },
-      { label: { lv: "Ātrums maks.", en: "Max Speed", ru: "Макс. скорость" }, value: "45 km/h" },
-      { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "95 kg" },
-      { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
-    ],
-  },
-  {
-    slug: "znen-zn50qt-r8-49cc-black",
-    name: "Znen ZN50QT-R8 49cc Black",
-    price: 1950,
-    oldPrice: 2000,
-    category: "Skūteri",
-    engine: "49cc",
-    image: "https://www.mobilus.lv/upload/R8%20black.jpg",
-    badge: "-3%",
-    stock: 2,
-    descriptionLv: "Melnā R8 — klasisks un bezlaicīgs. Ideāls pilsētas braucējs, kurš nepievilts.",
-    descriptionEn: "The black R8 — classic and timeless. An ideal city rider that won't disappoint.",
-    descriptionRu: "Чёрный R8 — классика вне времени. Идеальный городской скутер, который не разочарует.",
-    specs: [
-      { label: { lv: "Dzinējs", en: "Engine", ru: "Двигатель" }, value: "49cc 4-stroke" },
-      { label: { lv: "Ātrums maks.", en: "Max Speed", ru: "Макс. скорость" }, value: "45 km/h" },
-      { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "92 kg" },
-      { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
+    variants: [
+      { colorName: "White", colorHex: "#f5f5f5", image: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d8?q=80&w=900&auto=format&fit=crop", stock: 4 },
+      { colorName: "Black", colorHex: "#1a1a1a", image: "https://images.unsplash.com/photo-1580341289255-5b47c98a59dd?q=80&w=900&auto=format&fit=crop", stock: 2 },
     ],
   },
   {
@@ -130,7 +80,7 @@ const products = [
     oldPrice: null,
     category: "Elektro",
     engine: "Electric",
-    image: "https://www.mobilus.lv/upload/large_max2_800x1200.jpg",
+    image: "https://urbanebikes.com/cdn/shop/files/TC-max-full-black-2_1024x1024.jpg",
     badge: "Elektro",
     stock: 2,
     descriptionLv: "Super Soco TC MAx ir jaudīgs elektriskais skūteris ar lielu akumulatoru un iespaidīgu braukšanas diapazonu.",
@@ -143,6 +93,7 @@ const products = [
       { label: { lv: "Akumulators", en: "Battery", ru: "Аккумулятор" }, value: "60V 50Ah" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "24 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "super-soco-tc",
@@ -151,7 +102,7 @@ const products = [
     oldPrice: null,
     category: "Elektro",
     engine: "Electric",
-    image: "https://www.mobilus.lv/upload/large_tootepilt_TC.jpg",
+    image: "http://urbanebikes.com/cdn/shop/products/green-TC_1200x1200.jpg?v=1698840666",
     badge: "Elektro",
     stock: 3,
     descriptionLv: "Super Soco TC ir pilsētas elektriskais skūteris ar lielisku cenas/vērtības attiecību un zero emisijām.",
@@ -164,6 +115,7 @@ const products = [
       { label: { lv: "Akumulators", en: "Battery", ru: "Аккумулятор" }, value: "60V 30Ah" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "24 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "jonway-xing-mai",
@@ -172,7 +124,7 @@ const products = [
     oldPrice: null,
     category: "Elektro",
     engine: "Electric",
-    image: "https://www.mobilus.lv/upload/large_Xing%20Mai%2003.jpg",
+    image: "https://www.jonway.com/english/images/product/xinxing/pd1.jpg",
     badge: "E-Car",
     stock: 1,
     descriptionLv: "JonWay Xing Mai ir kompakts elektriskais automobilis, ideāls pilsētas braucieniem ar nulles emisijām.",
@@ -185,6 +137,7 @@ const products = [
       { label: { lv: "Sēdvietas", en: "Seats", ru: "Мест" }, value: "2" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "24 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "motocikls-vz5",
@@ -193,7 +146,7 @@ const products = [
     oldPrice: 2500,
     category: "Motocikli",
     engine: "125cc",
-    image: "https://www.mobilus.lv/upload/large_3840x2400_1321159_www.ArtFile.ru_-scaled.jpg",
+    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=900&auto=format&fit=crop",
     badge: "-8%",
     stock: 4,
     descriptionLv: "VZ-5 ir sportisks 125cc motocikls, ideāls jaunajiem braucējiem, kuri vēlas kaut ko vairāk par skūteri.",
@@ -206,6 +159,7 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "148 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "cfmoto-cforce-625l",
@@ -214,7 +168,7 @@ const products = [
     oldPrice: null,
     category: "ATV",
     engine: "600cc",
-    image: "https://www.mobilus.lv/upload/large_MY2023_CFORCE%20625_TOURING_Force%20Red_Left%2045_167.jpg",
+    image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/atv/atv/cforce-625-touring/2024/banner/PC_banner.jpg",
     badge: "ATV",
     stock: 2,
     descriptionLv: "CFMoto Cforce 625L ir jaudīgs kvadracikls ar 600cc dzinēju, piemērots gan sporta, gan lauksaimniecības vajadzībām.",
@@ -227,6 +181,7 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "380 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "cfmoto-cforce-450l",
@@ -235,7 +190,7 @@ const products = [
     oldPrice: null,
     category: "ATV",
     engine: "400cc",
-    image: "https://www.mobilus.lv/upload/large_MY2023_CFORCE%20450%20L_Jet%20Black_Left%2045_167.jpg",
+    image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/atv/atv/cforce-450-l-/gallery-small-pictures/CFORECE450L-banner.png",
     badge: "ATV",
     stock: 3,
     descriptionLv: "CFORCE 450L apvieno spēku un manevrētspēju. Ideāls kvadracikls gan pieredzējušiem, gan jauniem braucējiem.",
@@ -248,6 +203,7 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "310 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "cfmoto-110-youth",
@@ -256,7 +212,7 @@ const products = [
     oldPrice: null,
     category: "ATV",
     engine: "110cc",
-    image: "https://www.mobilus.lv/upload/large_MY2023_CFORCE%20110_Rocket%20Red_Left%2045_CE.jpg",
+    image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/youth/atv/cforce-110/2024/CFORCE110_1.png",
     badge: "Youth",
     stock: 5,
     descriptionLv: "CFMoto 110 Youth ir drošs un jautrs kvadracikls bērniem un pusaudžiem, lai iepazītos ar ATV braukšanu.",
@@ -268,6 +224,7 @@ const products = [
       { label: { lv: "Vecums", en: "Age", ru: "Возраст" }, value: "10+" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "atv-pentora-110-cvt",
@@ -276,7 +233,7 @@ const products = [
     oldPrice: null,
     category: "ATV",
     engine: "110cc",
-    image: "https://www.mobilus.lv/upload/large_110%20cvt%2001%20.png",
+    image: "https://images.unsplash.com/photo-1574768338754-6c0b51b82099?q=80&w=900&auto=format&fit=crop",
     badge: "Kids",
     stock: 4,
     descriptionLv: "Pentora 110 CVT — bērnu ATV ar automātisko pārnesumkārbu (CVT), ērti vadāms un drošs.",
@@ -288,6 +245,7 @@ const products = [
       { label: { lv: "Vecums", en: "Age", ru: "Возраст" }, value: "6-12" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
   {
     slug: "atv-kayo-110-kid",
@@ -296,7 +254,7 @@ const products = [
     oldPrice: null,
     category: "ATV",
     engine: "110cc",
-    image: "https://www.mobilus.lv/upload/large_KAYO_Warrior_110_II_ATV_Orange4.jpeg",
+    image: "https://static.wixstatic.com/media/4e7fac_b9040d41297a4d23b479d0a1e21da0fc~mv2.jpg/v1/fill/w_980,h_614,q_90,enc_avif,quality_auto/4e7fac_b9040d41297a4d23b479d0a1e21da0fc~mv2.jpg",
     badge: "Kids",
     stock: 6,
     descriptionLv: "Kayo 110 Kid ir izcils sākumpunkts jaunajiem ATV entuziastiem. Uzticams, drošs un viegli vadāms.",
@@ -308,18 +266,33 @@ const products = [
       { label: { lv: "Vecums", en: "Age", ru: "Возраст" }, value: "6-12" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
+    variants: [],
   },
 ];
 
 async function seed() {
-  console.log("Seeding products...");
-  for (const p of products) {
-    await db
-      .insert(productsTable)
-      .values(p)
-      .onConflictDoNothing();
+  console.log("Seeding products with variant support...");
+  for (const { variants, ...p } of products) {
+    const [existing] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.slug, p.slug))
+      .catch(() => []);
+
+    if (existing) {
+      console.log(`  Skipping existing product: ${p.slug}`);
+      continue;
+    }
+
+    const [product] = await db.insert(productsTable).values(p).returning();
+    console.log(`  Inserted product: ${product.slug} (id=${product.id})`);
+
+    for (const v of variants) {
+      await db.insert(productVariantsTable).values({ ...v, productId: product.id });
+      console.log(`    Added variant: ${v.colorName}`);
+    }
   }
-  console.log(`Seeded ${products.length} products.`);
+  console.log(`Done seeding.`);
   process.exit(0);
 }
 

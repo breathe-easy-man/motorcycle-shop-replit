@@ -15,6 +15,15 @@ interface Spec {
   value: string;
 }
 
+interface ProductVariant {
+  id: number;
+  productId: number;
+  colorName: string;
+  colorHex: string | null;
+  image: string;
+  stock: number;
+}
+
 interface ProductFromAPI {
   id: number;
   slug: string;
@@ -35,6 +44,7 @@ interface ProductFromAPI {
   manufacturerDescLv: string | null;
   manufacturerDescEn: string | null;
   manufacturerDescRu: string | null;
+  variants: ProductVariant[];
   createdAt: string;
   updatedAt: string;
 }
@@ -190,14 +200,21 @@ export default function ProductPage() {
   const [inquiryEmail, setInquiryEmail] = useState("");
   const [inquirySent, setInquirySent] = useState(false);
 
+  // Variant selection
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+
   useEffect(() => {
     setLoading(true);
     setImgError(false);
     setActiveImg(0);
+    setSelectedVariant(null);
     fetch(`/api/products/slug/${slug}`)
       .then((r) => r.json())
       .then((data) => {
         setProduct(data);
+        if (Array.isArray(data.variants) && data.variants.length > 0) {
+          setSelectedVariant(data.variants[0]);
+        }
         return fetch("/api/products");
       })
       .then((r) => r.json())
@@ -267,19 +284,23 @@ export default function ProductPage() {
     : null;
 
   const fallbackImg = FALLBACK_IMAGES[product.category] ?? FALLBACK_IMAGES.default;
-  const productImg = imgError ? fallbackImg : product.image;
+  const activeImage = selectedVariant ? selectedVariant.image : product.image;
+  const productImg = imgError ? fallbackImg : activeImage;
 
   const firstPayment = Math.round((product.price * firstPaymentPct) / 100);
 
   const moLabel = lang === "lv" ? "mēn" : lang === "ru" ? "мес" : "mo";
   const moLabelDot = lang === "lv" ? "mēn." : lang === "ru" ? "мес." : "mo.";
 
+  const displayStock = selectedVariant ? selectedVariant.stock : product.stock;
   const stockStatus =
-    product.stock === 0
+    displayStock === 0
       ? { label: lang === "lv" ? "Nav noliktavā" : lang === "ru" ? "Нет в наличии" : "Out of Stock", color: "text-red-500", icon: AlertCircle }
-      : product.stock <= 2
-      ? { label: lang === "lv" ? `Ierobežots (${product.stock} gab.)` : lang === "ru" ? `Ограничено (${product.stock} шт.)` : `Limited (${product.stock} left)`, color: "text-amber-400", icon: Clock }
-      : { label: lang === "lv" ? `Noliktavā — ${product.stock} gab.` : lang === "ru" ? `В наличии — ${product.stock} шт.` : `In Stock — ${product.stock} units`, color: "text-emerald-400", icon: CheckCircle2 };
+      : displayStock <= 2
+      ? { label: lang === "lv" ? `Ierobežots (${displayStock} gab.)` : lang === "ru" ? `Ограничено (${displayStock} шт.)` : `Limited (${displayStock} left)`, color: "text-amber-400", icon: Clock }
+      : { label: lang === "lv" ? `Noliktavā — ${displayStock} gab.` : lang === "ru" ? `В наличии — ${displayStock} шт.` : `In Stock — ${displayStock} units`, color: "text-emerald-400", icon: CheckCircle2 };
+
+  const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
 
   const StockIcon = stockStatus.icon;
 
@@ -352,25 +373,45 @@ export default function ProductPage() {
               />
             </div>
 
-            {/* Thumbnail strip */}
+            {/* Thumbnail strip — variant images if available, else product image */}
             <div className="grid grid-cols-4 gap-2">
-              {[product.image, product.image, product.image].map((src, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImg(i)}
-                  className={`aspect-square overflow-hidden border cursor-pointer transition-colors ${
-                    activeImg === i ? "border-primary" : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <img
-                    src={imgError ? fallbackImg : src}
-                    alt=""
-                    className="w-full h-full object-cover object-center"
-                    onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
-                    referrerPolicy="no-referrer"
-                  />
-                </button>
-              ))}
+              {hasVariants
+                ? product.variants.slice(0, 3).map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => { setSelectedVariant(v); setImgError(false); }}
+                      title={v.colorName}
+                      className={`aspect-square overflow-hidden border cursor-pointer transition-colors ${
+                        selectedVariant?.id === v.id ? "border-primary" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <img
+                        src={v.image}
+                        alt={v.colorName}
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
+                        referrerPolicy="no-referrer"
+                      />
+                    </button>
+                  ))
+                : [product.image, product.image, product.image].map((src, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImg(i)}
+                      className={`aspect-square overflow-hidden border cursor-pointer transition-colors ${
+                        activeImg === i ? "border-primary" : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <img
+                        src={imgError ? fallbackImg : src}
+                        alt=""
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
+                        referrerPolicy="no-referrer"
+                      />
+                    </button>
+                  ))
+              }
               <div className="aspect-square overflow-hidden border border-border flex items-center justify-center bg-card cursor-pointer hover:border-primary/50 transition-colors">
                 <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider text-center leading-tight px-1">360°</span>
               </div>
@@ -412,10 +453,47 @@ export default function ProductPage() {
             </p>
 
             {/* Stock status */}
-            <div className={`flex items-center gap-2 text-sm font-bold mb-5 ${stockStatus.color}`}>
+            <div className={`flex items-center gap-2 text-sm font-bold mb-4 ${stockStatus.color}`}>
               <StockIcon className="h-4 w-4" />
               {stockStatus.label}
             </div>
+
+            {/* Color variant swatches */}
+            {hasVariants && (
+              <div className="mb-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                  {lang === "lv" ? "Krāsa" : lang === "ru" ? "Цвет" : "Color"}
+                  {selectedVariant && (
+                    <span className="ml-2 text-white normal-case tracking-normal font-normal">
+                      — {selectedVariant.colorName}
+                    </span>
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((v) => {
+                    const isSelected = selectedVariant?.id === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => { setSelectedVariant(v); setImgError(false); }}
+                        title={v.colorName}
+                        className={`flex items-center gap-2 px-3 py-1.5 border text-xs font-bold transition-all duration-150 ${
+                          isSelected
+                            ? "border-primary text-white bg-primary/10"
+                            : "border-border text-muted-foreground hover:border-primary/60 hover:text-white"
+                        }`}
+                      >
+                        <span
+                          className="h-3 w-3 rounded-full flex-shrink-0 border border-white/20"
+                          style={{ backgroundColor: v.colorHex ?? "#888" }}
+                        />
+                        {v.colorName}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Description */}
             <p className="text-muted-foreground text-base leading-relaxed mb-6 border-l-2 border-primary/40 pl-4">
