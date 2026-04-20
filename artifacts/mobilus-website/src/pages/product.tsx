@@ -8,6 +8,7 @@ import {
   Phone, MapPin, Truck, Star, Send, MessageSquare, Tag
 } from "lucide-react";
 import { useI18n, Lang } from "@/lib/i18n";
+import { api } from "@/lib/api";
 
 interface Spec {
   label: { lv: string; en: string; ru: string };
@@ -29,6 +30,11 @@ interface ProductFromAPI {
   descriptionEn: string;
   descriptionRu: string;
   specs: Spec[];
+  manufacturerLogoUrl: string | null;
+  manufacturerYoutubeId: string | null;
+  manufacturerDescLv: string | null;
+  manufacturerDescEn: string | null;
+  manufacturerDescRu: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -278,7 +284,14 @@ export default function ProductPage() {
   const StockIcon = stockStatus.icon;
 
   const brand = extractBrand(product.name);
-  const manufacturer = MANUFACTURER_MAP[brand] ?? MANUFACTURER_MAP.default;
+  const staticMfg = MANUFACTURER_MAP[brand] ?? MANUFACTURER_MAP.default;
+  const manufacturer: ManufacturerInfo = {
+    logo: product.manufacturerLogoUrl ?? staticMfg.logo,
+    youtubeId: product.manufacturerYoutubeId ?? staticMfg.youtubeId,
+    descLv: product.manufacturerDescLv ?? staticMfg.descLv,
+    descEn: product.manufacturerDescEn ?? staticMfg.descEn,
+    descRu: product.manufacturerDescRu ?? staticMfg.descRu,
+  };
   const mfgDesc = lang === "lv" ? manufacturer.descLv : lang === "ru" ? manufacturer.descRu : manufacturer.descEn;
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -871,8 +884,19 @@ export default function ProductPage() {
                   </div>
 
                   <Button
-                    onClick={() => {
-                      if (reviewName.trim() && reviewText.trim()) setReviewSubmitted(true);
+                    onClick={async () => {
+                      if (reviewName.trim() && reviewText.trim()) {
+                        try {
+                          await api.reviews.create({
+                            productId: product.id,
+                            productSlug: product.slug,
+                            name: reviewName.trim(),
+                            rating: reviewStars,
+                            text: reviewText.trim(),
+                          });
+                        } catch {}
+                        setReviewSubmitted(true);
+                      }
                     }}
                     className="bg-primary hover:bg-primary/90 text-white rounded-none h-12 font-black uppercase tracking-widest text-sm px-8"
                   >
@@ -975,8 +999,20 @@ export default function ProductPage() {
                   </div>
 
                   <Button
-                    onClick={() => {
-                      if (inquiryName.trim() && inquiryPhone.trim() && inquiryEmail.trim()) setInquirySent(true);
+                    onClick={async () => {
+                      if (inquiryName.trim() && inquiryPhone.trim() && inquiryEmail.trim()) {
+                        try {
+                          await api.inquiries.create({
+                            productId: product.id,
+                            productSlug: product.slug,
+                            productName: product.name,
+                            name: inquiryName.trim(),
+                            phone: inquiryPhone.trim(),
+                            email: inquiryEmail.trim(),
+                          });
+                        } catch {}
+                        setInquirySent(true);
+                      }
                     }}
                     className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-12 font-black uppercase tracking-widest text-sm"
                   >
