@@ -6,6 +6,14 @@ import { Link } from "wouter";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
+interface ProductVariant {
+  id: number;
+  colorName: string;
+  colorHex: string | null;
+  image: string;
+  stock: number;
+}
+
 interface Product {
   id: number;
   name: string;
@@ -17,6 +25,7 @@ interface Product {
   badge: string | null;
   image: string;
   stock: number;
+  variants: ProductVariant[];
 }
 
 const WINTER_CATEGORIES = ["Slēpošana", "Snoubords"];
@@ -26,6 +35,7 @@ export default function Winter() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredImages, setHoveredImages] = useState<Record<number, string | null>>({});
 
   useEffect(() => {
     fetch("/api/products")
@@ -119,7 +129,7 @@ export default function Winter() {
                     </span>
                   )}
                   <img
-                    src={product.image}
+                    src={hoveredImages[product.id] ?? product.image}
                     alt={product.name}
                     className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
@@ -134,7 +144,24 @@ export default function Winter() {
                       {catLabel[product.category] ?? product.category}
                     </Badge>
                   </div>
-                  <h3 className="font-bold text-foreground text-sm leading-tight mb-3">{product.name}</h3>
+                  <h3 className="font-bold text-foreground text-sm leading-tight mb-2">{product.name}</h3>
+                  {Array.isArray(product.variants) && product.variants.length > 0 && (
+                    <div className="flex items-center gap-1.5 mb-3">
+                      {product.variants.slice(0, 6).map((v) => (
+                        <span
+                          key={v.id}
+                          title={v.colorName}
+                          className="h-4 w-4 rounded-full border-2 border-border hover:border-primary flex-shrink-0 cursor-pointer transition-transform hover:scale-125"
+                          style={{ backgroundColor: v.colorHex ?? "#888" }}
+                          onMouseEnter={() => setHoveredImages((prev) => ({ ...prev, [product.id]: v.image }))}
+                          onMouseLeave={() => setHoveredImages((prev) => ({ ...prev, [product.id]: null }))}
+                        />
+                      ))}
+                      {product.variants.length > 6 && (
+                        <span className="text-xs text-muted-foreground">+{product.variants.length - 6}</span>
+                      )}
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-xl font-black text-primary">€{product.price.toLocaleString()}</span>
                     {product.oldPrice && (

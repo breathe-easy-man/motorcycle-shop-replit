@@ -36,6 +36,7 @@ export default function Moto() {
   const [activeCategory, setActiveCategory] = useState(categoryParam ?? t.moto.filter_all);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredImages, setHoveredImages] = useState<Record<number, string | null>>({});
 
   useEffect(() => {
     fetch("/api/products")
@@ -129,13 +130,8 @@ export default function Moto() {
                           {product.badge}
                         </span>
                       )}
-                      {variantCount > 1 && (
-                        <span className="absolute top-3 right-3 z-10 bg-black/70 text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
-                          {variantCount} colors
-                        </span>
-                      )}
                       <img
-                        src={product.image}
+                        src={hoveredImages[product.id] ?? product.image}
                         alt={product.name}
                         className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                         onError={(e) => {
@@ -171,8 +167,10 @@ export default function Moto() {
                           <span
                             key={v.id}
                             title={v.colorName}
-                            className="h-3.5 w-3.5 rounded-full border border-white/20 flex-shrink-0"
+                            className="h-4 w-4 rounded-full border-2 border-border hover:border-primary flex-shrink-0 cursor-pointer transition-transform hover:scale-125"
                             style={{ backgroundColor: v.colorHex ?? "#888" }}
+                            onMouseEnter={() => setHoveredImages((prev) => ({ ...prev, [product.id]: v.image }))}
+                            onMouseLeave={() => setHoveredImages((prev) => ({ ...prev, [product.id]: null }))}
                           />
                         ))}
                         {variantCount > 6 && (
