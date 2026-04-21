@@ -101,7 +101,7 @@ export default function Home() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white mb-4">
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-foreground mb-4">
                 {t.home.categories}
               </h2>
               <div className="w-20 h-1 bg-primary"></div>
@@ -144,7 +144,7 @@ export default function Home() {
       {/* Leasing Partners */}
       <section className="py-24 bg-card border-t border-border">
         <div className="container mx-auto px-4 md:px-6 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-widest text-white mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-widest text-foreground mb-12">
             {t.home.leasing_partners}
           </h2>
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-60">

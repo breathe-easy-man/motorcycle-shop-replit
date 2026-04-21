@@ -266,7 +266,7 @@ export default function ProductPage() {
   if (!product || (product as any).error) {
     return (
       <div className="pt-32 pb-20 container mx-auto px-4 text-center">
-        <h1 className="text-4xl font-black text-white mb-4">Produkts nav atrasts</h1>
+        <h1 className="text-4xl font-black text-foreground mb-4">Produkts nav atrasts</h1>
         <Link href={parentHref}>
           <Button className="bg-primary text-white rounded-none">← {lang === "lv" ? "Atpakaļ" : lang === "ru" ? "Назад" : "Back"}</Button>
         </Link>
@@ -443,7 +443,7 @@ export default function ProductPage() {
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white uppercase tracking-tighter leading-none mb-4">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-foreground uppercase tracking-tighter leading-none mb-4">
               {product.name}
             </h1>
 
@@ -464,7 +464,7 @@ export default function ProductPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
                   {lang === "lv" ? "Krāsa" : lang === "ru" ? "Цвет" : "Color"}
                   {selectedVariant && (
-                    <span className="ml-2 text-white normal-case tracking-normal font-normal">
+                    <span className="ml-2 text-foreground normal-case tracking-normal font-normal">
                       — {selectedVariant.colorName}
                     </span>
                   )}
@@ -479,12 +479,12 @@ export default function ProductPage() {
                         title={v.colorName}
                         className={`flex items-center gap-2 px-3 py-1.5 border text-xs font-bold transition-all duration-150 ${
                           isSelected
-                            ? "border-primary text-white bg-primary/10"
-                            : "border-border text-muted-foreground hover:border-primary/60 hover:text-white"
+                            ? "border-primary text-primary bg-primary/10"
+                            : "border-border text-muted-foreground hover:border-primary/60 hover:text-primary"
                         }`}
                       >
                         <span
-                          className="h-3 w-3 rounded-full flex-shrink-0 border border-white/20"
+                          className="h-3 w-3 rounded-full flex-shrink-0 border border-black/10"
                           style={{ backgroundColor: v.colorHex ?? "#888" }}
                         />
                         {v.colorName}
@@ -537,7 +537,7 @@ export default function ProductPage() {
                   <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "cash" ? "text-primary" : "text-muted-foreground"}`}>
                     {lang === "lv" ? "Uzreiz" : lang === "ru" ? "Сразу" : "Cash"}
                   </div>
-                  <div className="text-lg font-black text-white">€{product.price.toLocaleString()}</div>
+                  <div className="text-lg font-black text-foreground">€{product.price.toLocaleString()}</div>
                   {discountPct && <div className="text-xs text-emerald-400 font-bold mt-0.5">-{discountPct}%</div>}
                 </button>
 
@@ -550,7 +550,7 @@ export default function ProductPage() {
                   <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "incredit" ? "text-primary" : "text-muted-foreground"}`}>
                     IN<span className="text-primary">CREDIT</span>
                   </div>
-                  <div className="text-lg font-black text-white">€{monthlyIncredit.toFixed(0)}</div>
+                  <div className="text-lg font-black text-foreground">€{monthlyIncredit.toFixed(0)}</div>
                   <div className="text-xs text-muted-foreground">/{moLabel}</div>
                 </button>
 
@@ -563,7 +563,7 @@ export default function ProductPage() {
                   <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "uno" ? "text-primary" : "text-muted-foreground"}`}>
                     UNO<span className="text-primary">LEASING</span>
                   </div>
-                  <div className="text-lg font-black text-white">€{monthlyUno.toFixed(0)}</div>
+                  <div className="text-lg font-black text-foreground">€{monthlyUno.toFixed(0)}</div>
                   <div className="text-xs text-muted-foreground">/{moLabel}</div>
                 </button>
               </div>
@@ -582,7 +582,7 @@ export default function ProductPage() {
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <Button
                 onClick={() => handleTabClick("pieprasijumi")}
-                className="flex-1 bg-primary hover:bg-primary/90 text-white rounded-none h-14 text-sm font-black uppercase tracking-widest"
+                className="flex-1 bg-primary hover:bg-primary/90 text-foreground rounded-none h-14 text-sm font-black uppercase tracking-widest"
               >
                 <Phone className="mr-2 h-4 w-4" />
                 {t.product.inquire}
@@ -606,7 +606,7 @@ export default function ProductPage() {
                 <div className="flex items-center gap-3 text-sm">
                   <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                   <div>
-                    <span className="text-white font-bold">
+                    <span className="text-foreground font-bold">
                       {lang === "lv" ? "Rīgā" : lang === "ru" ? "Рига" : "Riga"}
                     </span>
                     <span className="text-muted-foreground ml-2 text-xs">
@@ -617,7 +617,7 @@ export default function ProductPage() {
                 <div className="flex items-center gap-3 text-sm">
                   <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                   <div>
-                    <span className="text-white font-bold">
+                    <span className="text-foreground font-bold">
                       {lang === "lv" ? "Valmierā" : lang === "ru" ? "Валмиера" : "Valmiera"}
                     </span>
                     <span className="text-muted-foreground ml-2 text-xs">
@@ -628,7 +628,7 @@ export default function ProductPage() {
                 <div className="flex items-center gap-3 text-sm border-t border-border pt-2 mt-2">
                   <Truck className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                   <div>
-                    <span className="text-white font-bold">
+                    <span className="text-foreground font-bold">
                       {lang === "lv" ? "Piegāde uz adresi" : lang === "ru" ? "Доставка на адрес" : "Home Delivery"}
                     </span>
                     <span className="text-muted-foreground ml-2 text-xs">
@@ -667,7 +667,7 @@ export default function ProductPage() {
                 className={`flex-shrink-0 px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all duration-200 ${
                   activeTab === tab.key
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-white hover:border-border"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
                 {tab.label}
@@ -686,7 +686,7 @@ export default function ProductPage() {
               animate={{ opacity: 1, y: 0 }}
               className="py-12"
             >
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-6">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-6">
                 {product.name}
               </h2>
 
@@ -713,7 +713,7 @@ export default function ProductPage() {
                 {/* Spec highlights as bullet features */}
                 {specsForDisplay.length > 3 && (
                   <div className="mt-8">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-white mb-4">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-4">
                       {lang === "lv" ? "Galvenās īpašības" : lang === "ru" ? "Основные характеристики" : "Key Features"}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -721,7 +721,7 @@ export default function ProductPage() {
                         <div key={i} className="flex items-center gap-3 text-sm py-2 border-b border-border/40">
                           <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                           <span className="text-muted-foreground">{spec.label[lang as Lang] || spec.label.en}:</span>
-                          <span className="text-white font-bold ml-auto">{spec.value}</span>
+                          <span className="text-foreground font-bold ml-auto">{spec.value}</span>
                         </div>
                       ))}
                     </div>
@@ -738,7 +738,7 @@ export default function ProductPage() {
               animate={{ opacity: 1, y: 0 }}
               className="py-12"
             >
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8">
                 {brand !== "default" ? brand : (lang === "lv" ? "Ražotājs" : lang === "ru" ? "Производитель" : "Manufacturer")}
               </h2>
 
@@ -758,7 +758,7 @@ export default function ProductPage() {
                   )}
                   {!manufacturer.logo && brand !== "default" && (
                     <div className="mb-6">
-                      <span className="text-4xl font-black text-white uppercase tracking-tighter">{brand}</span>
+                      <span className="text-4xl font-black text-foreground uppercase tracking-tighter">{brand}</span>
                     </div>
                   )}
 
@@ -812,7 +812,7 @@ export default function ProductPage() {
                           <span className="text-muted-foreground text-sm">
                             {spec.label[lang as Lang] || spec.label.en}
                           </span>
-                          <span className="font-black text-white text-sm text-right max-w-[55%]">{spec.value}</span>
+                          <span className="font-black text-foreground text-sm text-right max-w-[55%]">{spec.value}</span>
                         </div>
                       ))}
                     </div>
@@ -827,13 +827,13 @@ export default function ProductPage() {
 
                   <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
                     <span className="text-sm text-muted-foreground uppercase tracking-wider font-bold">{t.product.price_label}</span>
-                    <span className="text-2xl font-black text-white">€{product.price.toLocaleString()}</span>
+                    <span className="text-2xl font-black text-foreground">€{product.price.toLocaleString()}</span>
                   </div>
 
                   <div className="bg-primary/10 border border-primary/20 px-6 py-5 mb-6 flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t.product.monthly}</p>
-                      <div className="text-4xl font-black text-white">
+                      <div className="text-4xl font-black text-foreground">
                         €{monthlyIncredit.toFixed(0)}
                         <span className="text-base font-normal text-muted-foreground ml-2">/{moLabel}</span>
                       </div>
@@ -849,7 +849,7 @@ export default function ProductPage() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         {t.product.first_payment}
                       </label>
-                      <span className="text-sm font-black text-white">{firstPaymentPct}% — €{firstPayment.toLocaleString()}</span>
+                      <span className="text-sm font-black text-foreground">{firstPaymentPct}% — €{firstPayment.toLocaleString()}</span>
                     </div>
                     <Slider
                       min={0} max={50} step={5}
@@ -883,7 +883,7 @@ export default function ProductPage() {
 
                   <Button
                     onClick={() => handleTabClick("pieprasijumi")}
-                    className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-12 font-black uppercase tracking-widest text-sm"
+                    className="w-full bg-primary hover:bg-primary/90 text-foreground rounded-none h-12 font-black uppercase tracking-widest text-sm"
                   >
                     {t.product.apply} <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -900,7 +900,7 @@ export default function ProductPage() {
               animate={{ opacity: 1, y: 0 }}
               className="py-12"
             >
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8">
                 {lang === "lv" ? "Atsauksmes" : lang === "ru" ? "Отзывы" : "Reviews"}
               </h2>
 
@@ -913,7 +913,7 @@ export default function ProductPage() {
                 </div>
               ) : (
                 <div className="max-w-2xl bg-card border border-border p-8">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-6">
                     {lang === "lv" ? "Rakstīt atsauksmi" : lang === "ru" ? "Написать отзыв" : "Write a Review"}
                   </h3>
 
@@ -943,7 +943,7 @@ export default function ProductPage() {
                       type="text"
                       value={reviewName}
                       onChange={(e) => setReviewName(e.target.value)}
-                      className="w-full bg-background border border-border px-4 py-3 text-white text-sm focus:outline-none focus:border-primary transition-colors"
+                      className="w-full bg-background border border-border px-4 py-3 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
                       placeholder={lang === "lv" ? "Jānis Bērziņš" : lang === "ru" ? "Иван Иванов" : "John Smith"}
                     />
                   </div>
@@ -956,7 +956,7 @@ export default function ProductPage() {
                       value={reviewText}
                       onChange={(e) => setReviewText(e.target.value)}
                       rows={4}
-                      className="w-full bg-background border border-border px-4 py-3 text-white text-sm focus:outline-none focus:border-primary transition-colors resize-none"
+                      className="w-full bg-background border border-border px-4 py-3 text-foreground text-sm focus:outline-none focus:border-primary transition-colors resize-none"
                       placeholder={lang === "lv" ? "Dalieties ar savu pieredzi..." : lang === "ru" ? "Поделитесь своим опытом..." : "Share your experience..."}
                     />
                   </div>
@@ -976,7 +976,7 @@ export default function ProductPage() {
                         setReviewSubmitted(true);
                       }
                     }}
-                    className="bg-primary hover:bg-primary/90 text-white rounded-none h-12 font-black uppercase tracking-widest text-sm px-8"
+                    className="bg-primary hover:bg-primary/90 text-foreground rounded-none h-12 font-black uppercase tracking-widest text-sm px-8"
                   >
                     <Send className="mr-2 h-4 w-4" />
                     {lang === "lv" ? "Turpināt" : lang === "ru" ? "Продолжить" : "Submit"}
@@ -989,7 +989,7 @@ export default function ProductPage() {
                 <div className="border border-border p-6 bg-card">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <span className="font-black text-white text-sm">M. Kalniņš</span>
+                      <span className="font-black text-foreground text-sm">M. Kalniņš</span>
                       <div className="flex gap-0.5 mt-1">
                         {[1,2,3,4,5].map(s => (
                           <Star key={s} className="h-3.5 w-3.5 text-primary fill-primary" />
@@ -1017,7 +1017,7 @@ export default function ProductPage() {
               animate={{ opacity: 1, y: 0 }}
               className="py-12"
             >
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-2">
                 {lang === "lv" ? "Pieprasījumi" : lang === "ru" ? "Запросы" : "Inquiries"}
               </h2>
               <p className="text-muted-foreground text-sm mb-8">
@@ -1045,7 +1045,7 @@ export default function ProductPage() {
                       type="text"
                       value={inquiryName}
                       onChange={(e) => setInquiryName(e.target.value)}
-                      className="w-full bg-background border border-border px-4 py-3 text-white text-sm focus:outline-none focus:border-primary transition-colors"
+                      className="w-full bg-background border border-border px-4 py-3 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
                       placeholder={lang === "lv" ? "Jānis Bērziņš" : lang === "ru" ? "Иван Иванов" : "John Smith"}
                     />
                   </div>
@@ -1058,7 +1058,7 @@ export default function ProductPage() {
                       type="tel"
                       value={inquiryPhone}
                       onChange={(e) => setInquiryPhone(e.target.value)}
-                      className="w-full bg-background border border-border px-4 py-3 text-white text-sm focus:outline-none focus:border-primary transition-colors"
+                      className="w-full bg-background border border-border px-4 py-3 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
                       placeholder="+371 2X XXX XXX"
                     />
                   </div>
@@ -1071,7 +1071,7 @@ export default function ProductPage() {
                       type="email"
                       value={inquiryEmail}
                       onChange={(e) => setInquiryEmail(e.target.value)}
-                      className="w-full bg-background border border-border px-4 py-3 text-white text-sm focus:outline-none focus:border-primary transition-colors"
+                      className="w-full bg-background border border-border px-4 py-3 text-foreground text-sm focus:outline-none focus:border-primary transition-colors"
                       placeholder="name@example.com"
                     />
                   </div>
@@ -1092,7 +1092,7 @@ export default function ProductPage() {
                         setInquirySent(true);
                       }
                     }}
-                    className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-12 font-black uppercase tracking-widest text-sm"
+                    className="w-full bg-primary hover:bg-primary/90 text-foreground rounded-none h-12 font-black uppercase tracking-widest text-sm"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     {lang === "lv" ? "Sūtīt jautājumu" : lang === "ru" ? "Отправить вопрос" : "Send Inquiry"}
@@ -1111,7 +1111,7 @@ export default function ProductPage() {
               {/* Test Drive CTA */}
               <div className="mt-10 max-w-xl border border-primary/30 bg-primary/5 p-6 flex items-center justify-between">
                 <div>
-                  <p className="font-black text-white uppercase tracking-wider text-sm mb-1">
+                  <p className="font-black text-foreground uppercase tracking-wider text-sm mb-1">
                     {lang === "lv" ? "Izmēģini braukšanu" : lang === "ru" ? "Тест-драйв" : "Test Drive"}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -1119,7 +1119,7 @@ export default function ProductPage() {
                   </p>
                 </div>
                 <Link href="/contact">
-                  <Button className="bg-primary hover:bg-primary/90 text-white rounded-none h-10 text-xs font-black uppercase tracking-widest ml-4 flex-shrink-0">
+                  <Button className="bg-primary hover:bg-primary/90 text-foreground rounded-none h-10 text-xs font-black uppercase tracking-widest ml-4 flex-shrink-0">
                     <Phone className="mr-2 h-3 w-3" />
                     {lang === "lv" ? "Pieteikties" : lang === "ru" ? "Записаться" : "Book Now"}
                   </Button>
@@ -1137,7 +1137,7 @@ export default function ProductPage() {
             viewport={{ once: true }}
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter">
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter">
                 {lang === "lv" ? "Līdzīgi produkti" : lang === "ru" ? "Похожие товары" : "Related Products"}
               </h2>
               <Link href={parentHref} className="text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
@@ -1168,7 +1168,7 @@ export default function ProductPage() {
                     </div>
                     <div className="p-4">
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{rel.category}</p>
-                      <h3 className="font-black text-sm text-white leading-tight mb-2">{rel.name}</h3>
+                      <h3 className="font-black text-sm text-foreground leading-tight mb-2">{rel.name}</h3>
                       <div className="flex items-baseline gap-2">
                         <span className="font-black text-primary">€{rel.price.toLocaleString()}</span>
                         {rel.oldPrice && (
