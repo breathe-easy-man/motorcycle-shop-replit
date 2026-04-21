@@ -35,13 +35,16 @@ export function Navbar() {
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-300 border-b border-transparent",
         isScrolled
-          ? "bg-background/90 backdrop-blur-md border-border py-3"
+          ? "bg-white/95 backdrop-blur-md border-border shadow-sm py-3"
           : "bg-transparent py-5"
       )}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-          <span className="text-2xl font-black tracking-tighter text-white uppercase italic">
+          <span className={cn(
+            "text-2xl font-black tracking-tighter uppercase italic transition-colors",
+            isScrolled ? "text-foreground" : "text-white"
+          )}>
             Mobilus<span className="text-primary">.</span>
           </span>
         </Link>
@@ -54,7 +57,11 @@ export function Navbar() {
               href={link.href}
               className={cn(
                 "text-sm font-medium uppercase tracking-wider transition-colors hover:text-primary",
-                location.startsWith(link.href) ? "text-primary" : "text-muted-foreground"
+                location.startsWith(link.href)
+                  ? "text-primary"
+                  : isScrolled
+                    ? "text-foreground/70 hover:text-primary"
+                    : "text-white/80 hover:text-white"
               )}
             >
               {link.label}
@@ -70,19 +77,25 @@ export function Navbar() {
                 onClick={() => setLang(l.code)}
                 className={cn(
                   "text-xs font-bold uppercase tracking-widest px-1 transition-colors",
-                  lang === l.code ? "text-primary" : "text-muted-foreground hover:text-white"
+                  lang === l.code
+                    ? "text-primary"
+                    : isScrolled
+                      ? "text-foreground/50 hover:text-foreground"
+                      : "text-white/60 hover:text-white"
                 )}
               >
                 {l.label}
               </button>
-              {i < LANGS.length - 1 && <span className="text-border text-xs">|</span>}
+              {i < LANGS.length - 1 && (
+                <span className={cn("text-xs", isScrolled ? "text-border" : "text-white/30")}>|</span>
+              )}
             </span>
           ))}
         </div>
 
         {/* Mobile Menu Toggle */}
         <button
-          className="md:hidden text-white"
+          className={cn("md:hidden transition-colors", isScrolled ? "text-foreground" : "text-white")}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -91,7 +104,7 @@ export function Navbar() {
 
       {/* Mobile Nav */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-background border-b border-border p-4 flex flex-col gap-2 shadow-2xl">
+        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-border p-4 flex flex-col gap-2 shadow-lg">
           {navLinks.map((link) => (
             <Link
               key={link.href}

@@ -39,7 +39,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="bg-card border-t border-border pt-16 pb-8">
+    <footer className="bg-gray-900 border-t border-gray-800 pt-16 pb-8">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-1">
@@ -48,44 +48,44 @@ export function Footer() {
                 Mobilus<span className="text-primary">.</span>
               </span>
             </Link>
-            <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">
               {tagline[lang]}
             </p>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">{st.links}</h3>
+            <h3 className="text-sm font-bold text-gray-200 mb-6 uppercase tracking-wider">{st.links}</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/moto" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.moto}</Link>
+                <Link href="/moto" className="text-gray-400 hover:text-primary transition-colors text-sm uppercase">{ql.moto}</Link>
               </li>
               <li>
-                <Link href="/velo" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.velo}</Link>
+                <Link href="/velo" className="text-gray-400 hover:text-primary transition-colors text-sm uppercase">{ql.velo}</Link>
               </li>
               <li>
-                <Link href="/leasing" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.leasing}</Link>
+                <Link href="/leasing" className="text-gray-400 hover:text-primary transition-colors text-sm uppercase">{ql.leasing}</Link>
               </li>
               <li>
-                <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors text-sm uppercase">{ql.about}</Link>
+                <Link href="/about" className="text-gray-400 hover:text-primary transition-colors text-sm uppercase">{ql.about}</Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">{st.contact}</h3>
+            <h3 className="text-sm font-bold text-gray-200 mb-6 uppercase tracking-wider">{st.contact}</h3>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-muted-foreground text-sm">
+              <li className="flex items-start gap-3 text-gray-400 text-sm">
                 <MapPin size={18} className="text-primary shrink-0 mt-0.5" />
                 <span>Dārzciema iela 123,<br />Rīga, LV-1073</span>
               </li>
-              <li className="flex items-center gap-3 text-muted-foreground text-sm">
+              <li className="flex items-center gap-3 text-gray-400 text-sm">
                 <Phone size={18} className="text-primary shrink-0" />
                 <div className="flex flex-col">
                   <a href="tel:+37167676402" className="hover:text-primary transition-colors">+371 67 676 402</a>
                   <a href="tel:+37129509623" className="hover:text-primary transition-colors">+371 29 509 623</a>
                 </div>
               </li>
-              <li className="flex items-center gap-3 text-muted-foreground text-sm">
+              <li className="flex items-center gap-3 text-gray-400 text-sm">
                 <Mail size={18} className="text-primary shrink-0" />
                 <a href="mailto:commerce@mobilus.lv" className="hover:text-primary transition-colors">commerce@mobilus.lv</a>
               </li>
@@ -93,17 +93,17 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">{st.hours}</h3>
+            <h3 className="text-sm font-bold text-gray-200 mb-6 uppercase tracking-wider">{st.hours}</h3>
             <ul className="space-y-3">
-              <li className="flex items-center justify-between text-sm text-muted-foreground">
+              <li className="flex items-center justify-between text-sm text-gray-400">
                 <span>{h.pf}</span>
-                <span className="text-white">10:00 – 19:00</span>
+                <span className="text-gray-200 font-medium">10:00 – 19:00</span>
               </li>
-              <li className="flex items-center justify-between text-sm text-muted-foreground">
+              <li className="flex items-center justify-between text-sm text-gray-400">
                 <span>{h.s}</span>
-                <span className="text-white">10:00 – 16:00</span>
+                <span className="text-gray-200 font-medium">10:00 – 16:00</span>
               </li>
-              <li className="flex items-center justify-between text-sm text-muted-foreground">
+              <li className="flex items-center justify-between text-sm text-gray-400">
                 <span>{h.sv}</span>
                 <span className="text-primary font-medium">{h.closed}</span>
               </li>
@@ -111,11 +111,11 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500">
             &copy; {new Date().getFullYear()} Mobilus. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-gray-500">
             <span className="hover:text-primary cursor-pointer transition-colors">{privacy[lang].pp}</span>
             <span className="hover:text-primary cursor-pointer transition-colors">{privacy[lang].tos}</span>
           </div>

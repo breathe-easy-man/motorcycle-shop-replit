@@ -46,7 +46,7 @@ export default function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-6 whitespace-pre-line">
+            <h2 className="text-4xl font-black text-foreground uppercase tracking-tighter mb-6 whitespace-pre-line">
               {t.about.retailer.split("\n")[0]}
               <br />
               <span className="text-primary">{t.about.retailer.split("\n")[1]}</span>
@@ -84,7 +84,7 @@ export default function About() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter mb-12"
+            className="text-3xl md:text-4xl font-black text-foreground uppercase tracking-tighter mb-12"
           >
             {t.about.values_title}
           </motion.h2>
@@ -103,7 +103,7 @@ export default function About() {
                   <div className="w-12 h-12 bg-primary/10 flex items-center justify-center mb-6">
                     <Icon className="h-6 w-6 text-primary" />
                   </div>
-                  <h3 className="text-lg font-black text-white uppercase tracking-tight mb-3">
+                  <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-3">
                     {val.title}
                   </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">{val.desc}</p>
@@ -115,13 +115,13 @@ export default function About() {
 
         {/* Leasing Partners */}
         <div className="bg-card border border-border p-10 md:p-16 mb-20">
-          <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-4">
+          <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-4">
             {t.about.leasing_title}
           </h2>
           <p className="text-muted-foreground mb-10">{t.about.leasing_sub}</p>
           <div className="flex flex-wrap gap-10 items-center">
             {["InCredit Group", "UNO Leasing", "Motive"].map((partner) => (
-              <div key={partner} className="text-xl font-black text-muted-foreground hover:text-white transition-colors">
+              <div key={partner} className="text-xl font-black text-muted-foreground hover:text-primary transition-colors">
                 {partner}
               </div>
             ))}
@@ -130,7 +130,7 @@ export default function About() {
 
         {/* CTA */}
         <div className="text-center">
-          <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">
+          <h2 className="text-4xl font-black text-foreground uppercase tracking-tighter mb-4">
             {t.about.visit}
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">{t.about.visit_sub}</p>

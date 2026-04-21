@@ -61,7 +61,7 @@ export default function Home() {
             className="text-5xl md:text-7xl lg:text-8xl font-black text-white uppercase tracking-tighter mb-6 leading-tight whitespace-pre-line"
           >
             {t.home.hero_title.split("\n")[0]} <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-red-600">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-amber-400">
               {t.home.hero_title.split("\n")[1]}
             </span>
           </motion.h1>

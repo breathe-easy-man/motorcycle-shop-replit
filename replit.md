@@ -25,3 +25,24 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Mobilus Website
+
+Premium rebuild of mobilus.lv — Latvian retailer of scooters, motorcycles, ATVs, bicycles, skates, winter sports.
+
+### Color Scheme
+Light theme inspired by K-moto (kmoto.lv):
+- Background: off-white `210 17% 97%`
+- Foreground: dark charcoal `220 25% 12%`
+- Card: pure white `0 0% 100%`
+- Primary: warm amber-orange `22 82% 50%` (not aggressive red)
+- Footer: explicit dark gray `bg-gray-900` for contrast
+
+### Key Architecture Notes
+- Admin key: `ADMIN_SECRET=mobilus-admin-2024`
+- DB push: `cd lib/db && pnpm run push`
+- Product routes: `/moto/:slug`, `/velo/:slug`, `/skates/:slug`, `/winter/:slug`
+- Admin route: `/admin` (requires key stored in localStorage)
+- DB tables: `products`, `product_variants`, `reviews`, `inquiries`
+- Review moderation: admin must approve before showing on product page
+- Inquiry tracking: read/unread flag, admin can delete

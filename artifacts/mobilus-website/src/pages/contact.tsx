@@ -40,7 +40,7 @@ export default function Contact() {
           <p className="text-primary font-bold uppercase tracking-widest text-sm mb-3">
             {t.contact.label}
           </p>
-          <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none mb-6">
+          <h1 className="text-5xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none mb-6">
             {t.contact.title}
           </h1>
           <p className="text-muted-foreground text-lg">{t.contact.subtitle}</p>
@@ -67,7 +67,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t.contact.address_label}</p>
-                    <p className="font-bold text-white">Rīga, Dārzciema 123</p>
+                    <p className="font-bold text-foreground">Rīga, Dārzciema 123</p>
                     <p className="text-sm text-muted-foreground">{t.home.country}, LV-1073</p>
                   </div>
                 </div>
@@ -78,7 +78,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t.contact.phone_label}</p>
-                    <a href="tel:+37167676402" className="font-bold text-white hover:text-primary transition-colors block">
+                    <a href="tel:+37167676402" className="font-bold text-foreground hover:text-primary transition-colors block">
                       +371 67 676 402
                     </a>
                     <a href="tel:+37129509623" className="text-sm text-muted-foreground hover:text-primary transition-colors block">
@@ -96,7 +96,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t.contact.email_label}</p>
-                    <a href="mailto:commerce@mobilus.lv" className="font-bold text-white hover:text-primary transition-colors">
+                    <a href="mailto:commerce@mobilus.lv" className="font-bold text-foreground hover:text-primary transition-colors">
                       commerce@mobilus.lv
                     </a>
                   </div>
@@ -109,8 +109,8 @@ export default function Contact() {
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t.contact.hours_label}</p>
                     <div className="space-y-1">
-                      <p className="text-sm text-white font-medium">{t.contact.hours_weekday}</p>
-                      <p className="text-sm text-white font-medium">{t.contact.hours_weekend}</p>
+                      <p className="text-sm text-foreground font-medium">{t.contact.hours_weekday}</p>
+                      <p className="text-sm text-foreground font-medium">{t.contact.hours_weekend}</p>
                     </div>
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export default function Contact() {
               <div className="absolute inset-0 bg-gradient-to-br from-muted to-background opacity-80" />
               <div className="relative z-10 text-center">
                 <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
-                <p className="text-sm font-bold text-white">Rīga, Dārzciema 123</p>
+                <p className="text-sm font-bold text-foreground">Rīga, Dārzciema 123</p>
                 <a
                   href="https://maps.google.com/?q=Dārzciema+123,+Riga,+Latvia"
                   target="_blank"
@@ -154,7 +154,7 @@ export default function Contact() {
                   <div className="w-20 h-20 bg-primary/10 flex items-center justify-center mb-6">
                     <CheckCircle className="h-10 w-10 text-primary" />
                   </div>
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-4">
+                  <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-4">
                     {t.contact.success_title}
                   </h2>
                   <p className="text-lg text-muted-foreground max-w-md">
@@ -182,7 +182,7 @@ export default function Contact() {
                   onSubmit={handleSubmit}
                   className="space-y-6"
                 >
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8">
+                  <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8">
                     {t.contact.form_title}
                   </h2>
 

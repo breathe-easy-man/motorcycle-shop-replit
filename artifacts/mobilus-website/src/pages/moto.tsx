@@ -205,7 +205,7 @@ export default function Moto() {
         {/* Leasing CTA */}
         <div className="mt-20 border border-border p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 bg-card">
           <div>
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">
+            <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-2">
               {t.moto.finance}
             </h2>
             <p className="text-muted-foreground">{t.moto.finance_sub}</p>

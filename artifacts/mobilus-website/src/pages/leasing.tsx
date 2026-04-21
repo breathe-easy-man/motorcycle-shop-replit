@@ -41,7 +41,7 @@ export default function Leasing() {
           <p className="text-primary font-bold uppercase tracking-widest text-sm mb-3">
             {t.leasing.label}
           </p>
-          <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none mb-6 whitespace-pre-line">
+          <h1 className="text-5xl md:text-7xl font-black text-foreground uppercase tracking-tighter leading-none mb-6 whitespace-pre-line">
             {t.leasing.title}
           </h1>
           <p className="text-muted-foreground text-lg">{t.leasing.subtitle}</p>
@@ -57,7 +57,7 @@ export default function Leasing() {
             transition={{ delay: 0.1 }}
             className="bg-card border border-border p-8 md:p-10"
           >
-            <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3">
+            <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8 flex items-center gap-3">
               <Calculator className="h-6 w-6 text-primary" />
               {t.leasing.calculate}
             </h2>
@@ -68,7 +68,7 @@ export default function Leasing() {
                 <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                   {t.leasing.price}
                 </label>
-                <span className="text-2xl font-black text-white">€{price.toLocaleString()}</span>
+                <span className="text-2xl font-black text-foreground">€{price.toLocaleString()}</span>
               </div>
               <Slider
                 min={500}
@@ -90,7 +90,7 @@ export default function Leasing() {
                 <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                   {t.leasing.first_payment}
                 </label>
-                <span className="text-xl font-black text-white">
+                <span className="text-xl font-black text-foreground">
                   {firstPaymentPct}% — €{firstPayment.toLocaleString()}
                 </span>
               </div>
@@ -120,7 +120,7 @@ export default function Leasing() {
                       const v = Math.max(0, Math.min(50, Number(e.target.value)));
                       setFirstPaymentPct(v);
                     }}
-                    className="w-full bg-background border border-border text-white font-bold text-sm px-3 py-2 focus:outline-none focus:border-primary"
+                    className="w-full bg-background border border-border text-foreground font-bold text-sm px-3 py-2 focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div className="flex-1">
@@ -135,7 +135,7 @@ export default function Leasing() {
                       const euros = Math.max(0, Math.min(price * 0.5, Number(e.target.value)));
                       setFirstPaymentPct(Math.round((euros / price) * 100));
                     }}
-                    className="w-full bg-background border border-border text-white font-bold text-sm px-3 py-2 focus:outline-none focus:border-primary"
+                    className="w-full bg-background border border-border text-foreground font-bold text-sm px-3 py-2 focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function Leasing() {
               <Percent className="h-5 w-5 text-primary flex-shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">{t.leasing.interest}</p>
-                <p className="text-lg font-black text-white">8.9% <span className="font-normal text-sm text-muted-foreground">p.a.</span></p>
+                <p className="text-lg font-black text-foreground">8.9% <span className="font-normal text-sm text-muted-foreground">p.a.</span></p>
               </div>
             </div>
 
@@ -245,7 +245,7 @@ export default function Leasing() {
                   <div key={partner.name} className="flex items-center gap-4 p-3 border border-border">
                     <div className="w-2 h-2 bg-primary flex-shrink-0" />
                     <div>
-                      <p className="font-bold text-white text-sm">{partner.name}</p>
+                      <p className="font-bold text-foreground text-sm">{partner.name}</p>
                       <p className="text-xs text-muted-foreground">{partner.desc}</p>
                     </div>
                   </div>

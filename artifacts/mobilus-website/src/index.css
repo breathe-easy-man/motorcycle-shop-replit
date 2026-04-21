@@ -50,36 +50,40 @@
 }
 
 :root {
-  --background: 0 0% 4%;
-  --foreground: 0 0% 100%;
-  --border: 0 0% 16%;
-  --card: 0 0% 6%;
-  --card-foreground: 0 0% 100%;
-  --card-border: 0 0% 16%;
-  --popover: 0 0% 6%;
-  --popover-foreground: 0 0% 100%;
-  --popover-border: 0 0% 16%;
+  /* Page background: clean off-white */
+  --background: 210 17% 97%;
+  --foreground: 220 25% 12%;
+  --border: 220 13% 87%;
 
-  /* #D0271E -> 4 75% 47% */
-  --primary: 4 75% 47%;
+  /* Cards: pure white with soft shadow */
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 12%;
+  --card-border: 220 13% 89%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 25% 12%;
+  --popover-border: 220 13% 89%;
+
+  /* Primary: warm amber-orange – energetic but not aggressive */
+  --primary: 22 82% 50%;
   --primary-foreground: 0 0% 100%;
 
-  /* #2F316E -> 238 40% 31% */
-  --secondary: 238 40% 31%;
-  --secondary-foreground: 0 0% 100%;
+  /* Secondary: steel-blue grey */
+  --secondary: 220 14% 90%;
+  --secondary-foreground: 220 25% 20%;
 
-  /* #0054A5 -> 209 100% 32% */
-  --accent: 209 100% 32%;
+  /* Accent: muted navy */
+  --accent: 214 55% 40%;
   --accent-foreground: 0 0% 100%;
 
-  --muted: 0 0% 12%;
-  --muted-foreground: 0 0% 65%;
+  --muted: 220 14% 93%;
+  --muted-foreground: 220 10% 46%;
 
-  --destructive: 0 84.2% 60.2%;
+  --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 0 0% 16%;
-  --ring: 4 75% 47%;
+  --input: 220 13% 87%;
+  --ring: 22 82% 50%;
   --radius: 0.5rem;
 }
 

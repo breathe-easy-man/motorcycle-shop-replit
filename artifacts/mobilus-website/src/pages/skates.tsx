@@ -185,7 +185,7 @@ export default function Skates() {
         {/* Info Banner */}
         <div className="mt-20 border border-border p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 bg-card">
           <div>
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-2">
+            <h2 className="text-3xl font-black text-foreground uppercase tracking-tighter mb-2">
               {lang === "lv" ? "Jautājumi? Mēs palīdzēsim!" : lang === "ru" ? "Вопросы? Мы поможем!" : "Questions? We'll help!"}
             </h2>
             <p className="text-muted-foreground">
