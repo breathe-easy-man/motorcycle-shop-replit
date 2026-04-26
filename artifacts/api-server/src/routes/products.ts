@@ -99,6 +99,14 @@ router.post("/products", requireAdmin, async (req, res) => {
         const [variant] = await tx.insert(productVariantsTable).values({ ...v, productId: product.id }).returning();
         variants.push(variant);
       }
+      if (variants.length > 0 && variants[0].image) {
+        const [updated] = await tx
+          .update(productsTable)
+          .set({ image: variants[0].image })
+          .where(eq(productsTable.id, product.id))
+          .returning();
+        return { ...updated, variants };
+      }
       return { ...product, variants };
     });
 
@@ -158,6 +166,14 @@ router.put("/products/:id", requireAdmin, async (req, res) => {
           .from(productVariantsTable)
           .where(eq(productVariantsTable.productId, id))
           .orderBy(productVariantsTable.id);
+      }
+      if (variants.length > 0 && variants[0].image) {
+        const [synced] = await tx
+          .update(productsTable)
+          .set({ image: variants[0].image })
+          .where(eq(productsTable.id, id))
+          .returning();
+        return { ...synced, variants };
       }
       return { ...product, variants };
     });

@@ -773,13 +773,50 @@ export default function AdminPage() {
                     <Input value={form.badge ?? ""} onChange={(e) => setField("badge", e.target.value || null)} className="rounded-none" placeholder="e.g. POPULĀRS / -10%" />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs text-muted-foreground mb-1">Image URL</label>
-                    <Input value={form.image} onChange={(e) => setField("image", e.target.value)} className="rounded-none font-mono text-sm" placeholder="https://..." />
-                    {form.image && (
-                      <img src={form.image} alt="preview" className="mt-2 h-20 object-contain bg-white/5 rounded"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        referrerPolicy="no-referrer"
-                      />
+                    <label className="block text-xs text-muted-foreground mb-1">
+                      Image URL
+                      {variantItems.length > 0 && (
+                        <span className="ml-2 text-amber-400/80 normal-case font-normal">
+                          — auto-synced from first color variant
+                        </span>
+                      )}
+                    </label>
+                    {variantItems.length > 0 ? (
+                      <div className="border border-white/10 bg-white/3 px-3 py-2 rounded-none">
+                        <div className="flex items-center gap-3">
+                          {variantItems[0].image ? (
+                            <img
+                              src={variantItems[0].image}
+                              alt="first variant preview"
+                              className="h-14 w-20 object-contain bg-white/5 flex-shrink-0"
+                              onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="h-14 w-20 bg-white/5 flex-shrink-0 flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">No image</span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground font-mono truncate">
+                              {variantItems[0].image || "—"}
+                            </p>
+                            <p className="text-xs text-amber-400/70 mt-1">
+                              Set this in the Colors tab on the first variant.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Input value={form.image} onChange={(e) => setField("image", e.target.value)} className="rounded-none font-mono text-sm" placeholder="https://..." />
+                        {form.image && (
+                          <img src={form.image} alt="preview" className="mt-2 h-20 object-contain bg-white/5 rounded"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
