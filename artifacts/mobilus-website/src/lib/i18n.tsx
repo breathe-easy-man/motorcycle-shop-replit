@@ -28,6 +28,9 @@ const translations = {
       cat_winter: "Ziema",
       cat_winter_desc: "Slēpošanas un snouborda aprīkojums",
       country: "Latvija",
+      featured: "Izceltie produkti",
+      featured_view_all: "Skatīt visus",
+      featured_view_details: "Skatīt detaļas",
     },
     moto: {
       title: "Moto",
@@ -167,6 +170,9 @@ const translations = {
       cat_winter: "Winter",
       cat_winter_desc: "Ski & snowboard equipment",
       country: "Latvia",
+      featured: "Featured Products",
+      featured_view_all: "View All",
+      featured_view_details: "View Details",
     },
     moto: {
       title: "Moto",
@@ -306,6 +312,9 @@ const translations = {
       cat_winter: "Зима",
       cat_winter_desc: "Лыжи и сноубординг",
       country: "Латвия",
+      featured: "Рекомендуемые товары",
+      featured_view_all: "Смотреть все",
+      featured_view_details: "Подробнее",
     },
     moto: {
       title: "Мото",

@@ -1,11 +1,69 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronRight, ArrowRight, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+
+interface ProductVariant {
+  id: number;
+  colorName: string;
+  colorHex: string | null;
+  image: string;
+  stock: number;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  price: number;
+  oldPrice: number | null;
+  engine: string | null;
+  badge: string | null;
+  image: string;
+  description: string | null;
+  stock: number;
+  variants: ProductVariant[];
+}
+
+const MOTO_CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV"];
+const VELO_CATEGORIES = ["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"];
+const SKATE_CATEGORIES = ["Skrituļslidas"];
+const WINTER_CATEGORIES = ["Slēpošana", "Snoubords"];
+
+function getProductHref(product: Product): string {
+  if (MOTO_CATEGORIES.includes(product.category)) return `/moto/${product.slug}`;
+  if (VELO_CATEGORIES.includes(product.category)) return `/velo/${product.slug}`;
+  if (SKATE_CATEGORIES.includes(product.category)) return `/skates/${product.slug}`;
+  if (WINTER_CATEGORIES.includes(product.category)) return `/winter/${product.slug}`;
+  return `/moto/${product.slug}`;
+}
 
 export default function Home() {
   const { t } = useI18n();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [hoveredImages, setHoveredImages] = useState<Record<number, string | null>>({});
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data) => {
+        const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
+        setProducts(list);
+      })
+      .catch(() => setProducts([]))
+      .finally(() => setLoadingProducts(false));
+  }, []);
+
+  const featuredProducts = (() => {
+    const withBadge = products.filter((p) => p.badge || p.oldPrice);
+    const pool = withBadge.length >= 4 ? withBadge : products;
+    return pool.slice(0, 4);
+  })();
 
   const categories = [
     {
@@ -138,6 +196,127 @@ export default function Home() {
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Featured Products */}
+      <section className="py-24 bg-card border-t border-border">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-end justify-between mb-12">
+            <div>
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-foreground mb-4">
+                {t.home.featured}
+              </h2>
+              <div className="w-20 h-1 bg-primary"></div>
+            </div>
+            <Link href="/moto">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white rounded-none uppercase font-bold tracking-widest px-6 text-xs">
+                {t.home.featured_view_all} <ChevronRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+
+          {loadingProducts ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : featuredProducts.length === 0 ? null : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product, i) => {
+                const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
+                const variantCount = hasVariants ? product.variants.length : 0;
+                const href = getProductHref(product);
+                return (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.08 }}
+                    className="group bg-background border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
+                  >
+                    <Link href={href} className="block">
+                      <div className="relative overflow-hidden aspect-[4/3] bg-muted cursor-pointer">
+                        {product.badge && (
+                          <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
+                            {product.badge}
+                          </span>
+                        )}
+                        <img
+                          src={hoveredImages[product.id] ?? product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop";
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-primary px-4 py-2">
+                            {t.home.featured_view_details}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        {product.engine && (
+                          <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
+                            {product.engine}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
+                          {product.category}
+                        </Badge>
+                      </div>
+                      <h3 className="font-bold text-foreground text-sm leading-tight mb-2">
+                        {product.name}
+                      </h3>
+                      {/* Color dots */}
+                      {hasVariants && (
+                        <div className="flex items-center gap-1.5 mb-3">
+                          {product.variants.slice(0, 6).map((v) => (
+                            <span
+                              key={v.id}
+                              title={v.colorName}
+                              className="h-4 w-4 rounded-full border-2 border-border hover:border-primary flex-shrink-0 cursor-pointer transition-transform hover:scale-125"
+                              style={{ backgroundColor: v.colorHex ?? "#888" }}
+                              onMouseEnter={() =>
+                                setHoveredImages((prev) => ({ ...prev, [product.id]: v.image }))
+                              }
+                              onMouseLeave={() =>
+                                setHoveredImages((prev) => ({ ...prev, [product.id]: null }))
+                              }
+                            />
+                          ))}
+                          {variantCount > 6 && (
+                            <span className="text-xs text-muted-foreground">+{variantCount - 6}</span>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <span className="text-xl font-black text-primary">
+                            €{product.price.toLocaleString()}
+                          </span>
+                          {product.oldPrice && (
+                            <span className="ml-2 text-sm text-muted-foreground line-through">
+                              €{product.oldPrice.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Link href={href}>
+                        <Button className="w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
+                          {t.home.featured_view_details} <ChevronRight className="ml-1 h-3 w-3" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
