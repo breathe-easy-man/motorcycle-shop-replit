@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -32,6 +32,7 @@ const VELO_CATEGORIES = ["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"];
 
 export default function Velo() {
   const { t, lang } = useI18n();
+  const [, setLocation] = useLocation();
   const [activeCategory, setActiveCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +119,8 @@ export default function Velo() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
+                onClick={() => setLocation(`/velo/${bike.slug}`)}
+                className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden cursor-pointer"
               >
                 <div className="relative overflow-hidden aspect-[4/3] bg-muted">
                   {bike.badge && (
