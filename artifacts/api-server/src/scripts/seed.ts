@@ -115,7 +115,10 @@ const products = [
       { label: { lv: "Akumulators", en: "Battery", ru: "Аккумулятор" }, value: "60V 30Ah" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "24 mēn. / months / мес." },
     ],
-    variants: [],
+    variants: [
+      { colorName: "Green", colorHex: "#2ecc71", image: "http://urbanebikes.com/cdn/shop/products/green-TC_1200x1200.jpg?v=1698840666", stock: 2 },
+      { colorName: "Black", colorHex: "#1a1a1a", image: "https://urbanebikes.com/cdn/shop/files/TC-max-full-black-2_1024x1024.jpg", stock: 1 },
+    ],
   },
   {
     slug: "jonway-xing-mai",
@@ -159,7 +162,10 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "148 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
-    variants: [],
+    variants: [
+      { colorName: "Black", colorHex: "#1a1a1a", image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=900&auto=format&fit=crop", stock: 2 },
+      { colorName: "Red", colorHex: "#c0392b", image: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=900&auto=format&fit=crop", stock: 2 },
+    ],
   },
   {
     slug: "cfmoto-cforce-625l",
@@ -181,7 +187,10 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "380 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
-    variants: [],
+    variants: [
+      { colorName: "Camo Green", colorHex: "#4a5240", image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/atv/atv/cforce-625-touring/2024/banner/PC_banner.jpg", stock: 1 },
+      { colorName: "Orange", colorHex: "#e67e22", image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/atv/atv/cforce-625-touring/2024/banner/PC_banner.jpg", stock: 1 },
+    ],
   },
   {
     slug: "cfmoto-cforce-450l",
@@ -203,7 +212,10 @@ const products = [
       { label: { lv: "Svars", en: "Weight", ru: "Вес" }, value: "310 kg" },
       { label: { lv: "Garantija", en: "Warranty", ru: "Гарантия" }, value: "12 mēn. / months / мес." },
     ],
-    variants: [],
+    variants: [
+      { colorName: "Green", colorHex: "#27ae60", image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/atv/atv/cforce-450-l-/gallery-small-pictures/CFORECE450L-banner.png", stock: 2 },
+      { colorName: "Blue", colorHex: "#2980b9", image: "https://www.cfmoto.com/content/dam/cfmoto/site/global/product/atv/atv/cforce-450-l-/gallery-small-pictures/CFORECE450L-banner.png", stock: 1 },
+    ],
   },
   {
     slug: "cfmoto-110-youth",
