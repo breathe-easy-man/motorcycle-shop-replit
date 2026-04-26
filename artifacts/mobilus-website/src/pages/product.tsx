@@ -187,6 +187,7 @@ export default function ProductPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("apraksts");
   const tabsRef = useRef<HTMLDivElement>(null);
+  const leasingRef = useRef<HTMLDivElement>(null);
 
   // Review form state
   const [reviewStars, setReviewStars] = useState(5);
@@ -588,7 +589,7 @@ export default function ProductPage() {
                 {t.product.inquire}
               </Button>
               <Button
-                onClick={() => handleTabClick("specifikacija")}
+                onClick={() => leasingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 variant="outline"
                 className="flex-1 border-border text-foreground hover:border-primary hover:text-primary rounded-none h-14 text-sm font-bold uppercase tracking-widest"
               >
@@ -788,108 +789,31 @@ export default function ProductPage() {
               animate={{ opacity: 1, y: 0 }}
               className="py-12"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              <h2 className="text-xs font-black uppercase tracking-widest text-primary mb-6">
+                {t.product.specs}
+              </h2>
 
-                {/* Specs table */}
-                <div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-primary mb-6">
-                    {t.product.specs}
-                  </h2>
-
-                  {specsForDisplay.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                      {lang === "lv" ? "Specifikācija nav pieejama." : lang === "ru" ? "Спецификация недоступна." : "Specifications not available."}
-                    </p>
-                  ) : (
-                    <div className="space-y-0 border border-border">
-                      {specsForDisplay.map((spec, i) => (
-                        <div
-                          key={i}
-                          className={`flex justify-between items-center py-3 px-4 ${
-                            i % 2 === 0 ? "bg-card" : "bg-background"
-                          }`}
-                        >
-                          <span className="text-muted-foreground text-sm">
-                            {spec.label[lang as Lang] || spec.label.en}
-                          </span>
-                          <span className="font-black text-foreground text-sm text-right max-w-[55%]">{spec.value}</span>
-                        </div>
-                      ))}
+              {specsForDisplay.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  {lang === "lv" ? "Specifikācija nav pieejama." : lang === "ru" ? "Спецификация недоступна." : "Specifications not available."}
+                </p>
+              ) : (
+                <div className="max-w-2xl space-y-0 border border-border">
+                  {specsForDisplay.map((spec, i) => (
+                    <div
+                      key={i}
+                      className={`flex justify-between items-center py-3 px-4 ${
+                        i % 2 === 0 ? "bg-card" : "bg-background"
+                      }`}
+                    >
+                      <span className="text-muted-foreground text-sm">
+                        {spec.label[lang as Lang] || spec.label.en}
+                      </span>
+                      <span className="font-black text-foreground text-sm text-right max-w-[55%]">{spec.value}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
-
-                {/* Leasing Calculator */}
-                <div className="bg-card border border-border p-8">
-                  <h2 className="text-xs font-black uppercase tracking-widest text-primary mb-6">
-                    {t.product.leasing_title}
-                  </h2>
-
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
-                    <span className="text-sm text-muted-foreground uppercase tracking-wider font-bold">{t.product.price_label}</span>
-                    <span className="text-2xl font-black text-foreground">€{product.price.toLocaleString()}</span>
-                  </div>
-
-                  <div className="bg-primary/10 border border-primary/20 px-6 py-5 mb-6 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t.product.monthly}</p>
-                      <div className="text-4xl font-black text-foreground">
-                        €{monthlyIncredit.toFixed(0)}
-                        <span className="text-base font-normal text-muted-foreground ml-2">/{moLabel}</span>
-                      </div>
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      <div>{firstPaymentPct}% {lang === "lv" ? "iemaksa" : lang === "ru" ? "взнос" : "down"}</div>
-                      <div className="text-primary font-bold">{term} {moLabelDot}</div>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        {t.product.first_payment}
-                      </label>
-                      <span className="text-sm font-black text-foreground">{firstPaymentPct}% — €{firstPayment.toLocaleString()}</span>
-                    </div>
-                    <Slider
-                      min={0} max={50} step={5}
-                      value={[firstPaymentPct]}
-                      onValueChange={([val]) => setFirstPaymentPct(val)}
-                      className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
-                    />
-                    <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                      <span>0%</span><span>50%</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-6">
-                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-3">
-                      {t.product.term}
-                    </label>
-                    <div className="flex gap-2">
-                      {TERM_OPTIONS.map((t_) => (
-                        <button
-                          key={t_}
-                          onClick={() => setTerm(t_)}
-                          className={`flex-1 py-2.5 text-xs font-black border transition-colors ${
-                            term === t_ ? "bg-primary border-primary text-white" : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-                          }`}
-                        >
-                          {t_}m
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={() => handleTabClick("pieprasijumi")}
-                    className="w-full bg-primary hover:bg-primary/90 text-foreground rounded-none h-12 font-black uppercase tracking-widest text-sm"
-                  >
-                    {t.product.apply} <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-3">{t.leasing.indicative}</p>
-                </div>
-              </div>
+              )}
             </motion.div>
           )}
 
@@ -1127,6 +1051,112 @@ export default function ProductPage() {
               </div>
             </motion.div>
           )}
+        </div>
+
+        {/* ===== LEASING CALCULATOR (standalone) ===== */}
+        <div ref={leasingRef} className="scroll-mt-24 mb-20">
+          <div className="border-t border-border pt-16">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1 h-8 bg-primary" />
+              <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter">
+                {lang === "lv" ? "Lēzinga kalkulators" : lang === "ru" ? "Калькулятор лизинга" : "Leasing Calculator"}
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Calculator inputs */}
+              <div className="bg-card border border-border p-8">
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
+                  <span className="text-sm text-muted-foreground uppercase tracking-wider font-bold">{t.product.price_label}</span>
+                  <span className="text-2xl font-black text-foreground">€{product.price.toLocaleString()}</span>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      {t.product.first_payment}
+                    </label>
+                    <span className="text-sm font-black text-foreground">{firstPaymentPct}% — €{firstPayment.toLocaleString()}</span>
+                  </div>
+                  <Slider
+                    min={0} max={50} step={5}
+                    value={[firstPaymentPct]}
+                    onValueChange={([val]) => setFirstPaymentPct(val)}
+                    className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
+                  />
+                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <span>0%</span><span>50%</span>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-3">
+                    {t.product.term}
+                  </label>
+                  <div className="flex gap-2">
+                    {TERM_OPTIONS.map((t_) => (
+                      <button
+                        key={t_}
+                        onClick={() => setTerm(t_)}
+                        className={`flex-1 py-2.5 text-xs font-black border transition-colors ${
+                          term === t_ ? "bg-primary border-primary text-white" : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {t_}m
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => handleTabClick("pieprasijumi")}
+                  className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-12 font-black uppercase tracking-widest text-sm"
+                >
+                  {t.product.apply} <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+                <p className="text-xs text-muted-foreground mt-3">{t.leasing.indicative}</p>
+              </div>
+
+              {/* Result panel */}
+              <div className="flex flex-col gap-4">
+                <div className="bg-primary/10 border border-primary/20 px-8 py-8 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t.product.monthly}</p>
+                    <div className="text-5xl font-black text-foreground">
+                      €{monthlyIncredit.toFixed(0)}
+                      <span className="text-base font-normal text-muted-foreground ml-2">/{moLabel}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      IN<span className="text-primary font-black">CREDIT</span>
+                    </p>
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground">
+                    <div className="text-2xl font-black text-foreground mb-1">{firstPaymentPct}%</div>
+                    <div>{lang === "lv" ? "iemaksa" : lang === "ru" ? "взнос" : "down"}</div>
+                    <div className="text-primary font-bold mt-1">{term} {moLabelDot}</div>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border px-8 py-8 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t.product.monthly}</p>
+                    <div className="text-5xl font-black text-foreground">
+                      €{monthlyUno.toFixed(0)}
+                      <span className="text-base font-normal text-muted-foreground ml-2">/{moLabel}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      UNO<span className="text-primary font-black">LEASING</span>
+                    </p>
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground">
+                    <div className="text-2xl font-black text-foreground mb-1">{firstPaymentPct}%</div>
+                    <div>{lang === "lv" ? "iemaksa" : lang === "ru" ? "взнос" : "down"}</div>
+                    <div className="text-primary font-bold mt-1">{term} {moLabelDot}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ===== RELATED PRODUCTS ===== */}
