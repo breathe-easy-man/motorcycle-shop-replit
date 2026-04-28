@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry } from "@/lib/api";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Pencil, Trash2, LogOut, Save, X, Package,
   ChevronUp, ChevronDown, Search, Star, MessageSquare,
-  CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette
+  CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette, ShoppingCart
 } from "lucide-react";
 
 const STORAGE_KEY = "mobilus_admin_key";
 const CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV", "Velo", "Skrituļslidas", "Slēpes", "Snoubords"];
 
 type FormState = Omit<ApiProductInput, "variants">;
-type AdminTab = "products" | "reviews" | "inquiries";
+type AdminTab = "products" | "reviews" | "inquiries" | "orders";
 
 type VariantFormItem = {
   id?: number;
@@ -89,6 +89,11 @@ export default function AdminPage() {
   const [inquiries, setInquiries] = useState<ApiInquiry[]>([]);
   const [loadingInquiries, setLoadingInquiries] = useState(false);
 
+  // Orders state
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+
   const loadProducts = useCallback(async () => {
     setLoadingProducts(true);
     setProductError("");
@@ -124,13 +129,25 @@ export default function AdminPage() {
     }
   }, [adminKey]);
 
+  const loadOrders = useCallback(async () => {
+    setLoadingOrders(true);
+    try {
+      const data = await api.orders.listAll(adminKey);
+      setOrders(data);
+    } catch {
+    } finally {
+      setLoadingOrders(false);
+    }
+  }, [adminKey]);
+
   useEffect(() => {
     if (authed) {
       loadProducts();
       loadReviews();
       loadInquiries();
+      loadOrders();
     }
-  }, [authed, loadProducts, loadReviews, loadInquiries]);
+  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders]);
 
   async function handleLogin() {
     setAuthError("");
@@ -329,6 +346,13 @@ export default function AdminPage() {
     } catch {}
   }
 
+  async function updateOrderStatus(id: number, status: string) {
+    try {
+      const updated = await api.orders.patch(id, { status }, adminKey);
+      setOrders((o) => o.map((x) => (x.id === id ? updated : x)));
+    } catch {}
+  }
+
   function toggleSort(field: keyof ApiProduct) {
     if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortField(field); setSortDir("asc"); }
@@ -405,7 +429,8 @@ export default function AdminPage() {
                 { key: "products" as const, label: "Products", icon: ShoppingBag, badge: 0 },
                 { key: "reviews" as const, label: "Reviews", icon: Star, badge: pendingReviews },
                 { key: "inquiries" as const, label: "Inquiries", icon: MessageSquare, badge: unreadInquiries },
-              ] as const).map(({ key, label, icon: Icon, badge }) => (
+                { key: "orders" as const, label: "Orders", icon: ShoppingCart, badge: orders.filter(o => o.status === "pending").length },
+              ] as { key: AdminTab; label: string; icon: any; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
@@ -695,6 +720,143 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ===== ORDERS TAB ===== */}
+        {activeTab === "orders" && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tighter">Orders</h1>
+                <p className="text-muted-foreground text-sm">
+                  {orders.length} total · <span className="text-primary">{orders.filter(o => o.status === "pending").length} pending</span>
+                </p>
+              </div>
+              <Button variant="outline" onClick={loadOrders} className="rounded-none border-border text-muted-foreground hover:text-foreground">
+                Refresh
+              </Button>
+            </div>
+
+            {loadingOrders ? (
+              <div className="text-muted-foreground py-16 text-center">Loading orders...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-20 border border-border">
+                <ShoppingCart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No orders yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((order) => {
+                  const isExpanded = expandedOrder === order.id;
+                  const addr = order.deliveryAddress as any;
+                  const statusColors: Record<string, string> = {
+                    pending: "bg-amber-100 text-amber-700 border-amber-300",
+                    confirmed: "bg-blue-100 text-blue-700 border-blue-300",
+                    paid: "bg-emerald-100 text-emerald-700 border-emerald-300",
+                    shipped: "bg-purple-100 text-purple-700 border-purple-300",
+                    completed: "bg-green-100 text-green-700 border-green-300",
+                    cancelled: "bg-red-100 text-red-500 border-red-300",
+                  };
+                  const statusClass = statusColors[order.status] ?? "bg-muted text-foreground border-border";
+                  return (
+                    <div key={order.id} className={`border transition-colors ${isExpanded ? "border-primary/40 bg-primary/5" : "border-border bg-card"}`}>
+                      {/* Row header */}
+                      <button
+                        className="w-full flex items-center justify-between p-5 text-left"
+                        onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                      >
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <span className="font-black text-foreground text-sm">#{order.id}</span>
+                          <span className="text-sm text-muted-foreground">{formatDate(order.createdAt)}</span>
+                          <span className="font-bold text-foreground text-sm">{order.customerName}</span>
+                          <span className="text-xs text-muted-foreground">{order.paymentMethod}</span>
+                          <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 border rounded-none ${statusClass}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="font-black text-primary text-base">€{order.total.toLocaleString()}</span>
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </div>
+                      </button>
+
+                      {/* Expanded details */}
+                      {isExpanded && (
+                        <div className="border-t border-border p-5 space-y-5">
+                          {/* Status changer */}
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Change status:</span>
+                            {(["pending", "confirmed", "paid", "shipped", "completed", "cancelled"] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => updateOrderStatus(order.id, s)}
+                                className={`text-xs font-bold uppercase tracking-wider px-3 py-1 border transition-colors ${
+                                  order.status === s ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                                }`}
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Contact + address */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Customer</p>
+                              <p className="text-sm font-bold text-foreground">{order.customerName}</p>
+                              <a href={`mailto:${order.customerEmail}`} className="text-sm text-primary hover:underline block">{order.customerEmail}</a>
+                              {order.customerPhone && <a href={`tel:${order.customerPhone}`} className="text-sm text-muted-foreground block">{order.customerPhone}</a>}
+                            </div>
+                            {addr && (
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Delivery</p>
+                                <p className="text-sm text-foreground">{addr.address}, {addr.city} {addr.postalCode}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{addr.deliveryMethod === "riga" ? "Pickup: Rīga" : addr.deliveryMethod === "valmiera" ? "Pickup: Valmiera" : addr.deliveryMethod}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Items */}
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Items</p>
+                            <div className="space-y-2">
+                              {(order.items as any[]).map((item: any, idx: number) => (
+                                <div key={idx} className="flex items-center gap-3 text-sm">
+                                  {item.image && <img src={item.image} alt={item.name} className="h-10 w-10 object-cover border border-border" referrerPolicy="no-referrer" />}
+                                  <div className="flex-1 min-w-0">
+                                    <span className="font-bold text-foreground">{item.name}</span>
+                                    {item.colorName && <span className="text-xs text-muted-foreground ml-2">({item.colorName})</span>}
+                                  </div>
+                                  <span className="text-muted-foreground">×{item.quantity}</span>
+                                  <span className="font-bold text-foreground">€{(item.price * item.quantity).toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Totals */}
+                          <div className="border-t border-border pt-4 flex flex-col items-end gap-1 text-sm">
+                            <div className="flex gap-8">
+                              <span className="text-muted-foreground">Subtotal (excl. VAT)</span>
+                              <span className="font-bold text-foreground">€{order.subtotal.toLocaleString()}</span>
+                            </div>
+                            <div className="flex gap-8">
+                              <span className="text-muted-foreground">VAT (21%)</span>
+                              <span className="font-bold text-foreground">€{order.vat.toLocaleString()}</span>
+                            </div>
+                            <div className="flex gap-8 text-base">
+                              <span className="font-black text-foreground">Total</span>
+                              <span className="font-black text-primary">€{order.total.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>

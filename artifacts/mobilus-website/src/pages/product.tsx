@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, Loader2,
-  Phone, MapPin, Truck, Star, Send, MessageSquare, Tag
+  Phone, MapPin, Truck, Star, Send, MessageSquare, Tag, ShoppingCart, Plus, Minus
 } from "lucide-react";
 import { useI18n, Lang } from "@/lib/i18n";
 import { api } from "@/lib/api";
+import { useCart } from "@/lib/cart";
 
 interface Spec {
   label: { lv: string; en: string; ru: string };
@@ -200,6 +201,11 @@ export default function ProductPage() {
   const [inquiryPhone, setInquiryPhone] = useState("");
   const [inquiryEmail, setInquiryEmail] = useState("");
   const [inquirySent, setInquirySent] = useState(false);
+
+  // Cart
+  const { add: addToCart } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   // Variant selection
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -579,23 +585,82 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            {/* Quantity + Add to Cart */}
+            <div className="flex flex-col gap-3 mb-6">
+              {/* Quantity selector */}
+              <div className="flex items-center gap-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  {lang === "lv" ? "Daudzums" : lang === "ru" ? "Кол-во" : "Qty"}
+                </p>
+                <div className="flex items-center border border-border">
+                  <button
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="h-10 w-10 flex items-center justify-center hover:bg-muted transition-colors"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="h-10 w-10 flex items-center justify-center font-black text-foreground border-x border-border text-sm">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="h-10 w-10 flex items-center justify-center hover:bg-muted transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Add to cart button */}
               <Button
-                onClick={() => handleTabClick("pieprasijumi")}
-                className="flex-1 bg-primary hover:bg-primary/90 text-foreground rounded-none h-14 text-sm font-black uppercase tracking-widest"
+                onClick={() => {
+                  if (!product) return;
+                  addToCart({
+                    productId: product.id,
+                    slug: product.slug,
+                    name: product.name,
+                    image: selectedVariant ? selectedVariant.image : product.image,
+                    price: product.price,
+                    quantity,
+                    sku: product.slug.replace(/-/g, "").toUpperCase().slice(0, 12),
+                    colorName: selectedVariant?.colorName,
+                    colorHex: selectedVariant?.colorHex ?? undefined,
+                    section: parentSection,
+                  });
+                  setAddedToCart(true);
+                  setTimeout(() => setAddedToCart(false), 2500);
+                }}
+                className={`w-full rounded-none h-14 text-sm font-black uppercase tracking-widest transition-all ${
+                  addedToCart
+                    ? "bg-emerald-500 hover:bg-emerald-500 text-white"
+                    : "bg-primary hover:bg-primary/90 text-white"
+                }`}
               >
-                <Phone className="mr-2 h-4 w-4" />
-                {t.product.inquire}
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                {addedToCart
+                  ? (lang === "lv" ? "Pievienots!" : lang === "ru" ? "Добавлено!" : "Added!")
+                  : (lang === "lv" ? "Pievienot grozam" : lang === "ru" ? "В корзину" : "Add to Cart")}
               </Button>
-              <Button
-                onClick={() => leasingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                variant="outline"
-                className="flex-1 border-border text-foreground hover:border-primary hover:text-primary rounded-none h-14 text-sm font-bold uppercase tracking-widest"
-              >
-                {lang === "lv" ? "Aprēķināt līzingu" : lang === "ru" ? "Рассчитать лизинг" : "Calculate Lease"}
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+
+              {/* Secondary CTAs */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => handleTabClick("pieprasijumi")}
+                  variant="outline"
+                  className="flex-1 border-border text-foreground hover:border-primary hover:text-primary rounded-none h-11 text-xs font-black uppercase tracking-widest"
+                >
+                  <Phone className="mr-1.5 h-3.5 w-3.5" />
+                  {t.product.inquire}
+                </Button>
+                <Button
+                  onClick={() => leasingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  variant="outline"
+                  className="flex-1 border-border text-foreground hover:border-primary hover:text-primary rounded-none h-11 text-xs font-bold uppercase tracking-widest"
+                >
+                  {lang === "lv" ? "Aprēķināt līzingu" : lang === "ru" ? "Рассчитать лизинг" : "Calculate Lease"}
+                  <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
 
             {/* Availability */}

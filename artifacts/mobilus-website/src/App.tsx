@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/layout";
 import { I18nProvider } from "@/lib/i18n";
+import { CartProvider } from "@/lib/cart";
 import NotFound from "@/pages/not-found";
 
 import Home from "@/pages/home";
@@ -17,6 +18,10 @@ import Leasing from "@/pages/leasing";
 import About from "@/pages/about";
 import ProductPage from "@/pages/product";
 import AdminPage from "@/pages/admin";
+import CartPage from "@/pages/cart";
+import CheckoutPage from "@/pages/checkout";
+import CheckoutSuccess from "@/pages/checkout-success";
+import CheckoutCancel from "@/pages/checkout-cancel";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +59,10 @@ function Router() {
             <Route path="/contact" component={Contact} />
             <Route path="/leasing" component={Leasing} />
             <Route path="/about" component={About} />
+            <Route path="/cart" component={CartPage} />
+            <Route path="/checkout" component={CheckoutPage} />
+            <Route path="/checkout/success" component={CheckoutSuccess} />
+            <Route path="/checkout/cancel" component={CheckoutCancel} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
@@ -65,14 +74,16 @@ function Router() {
 function App() {
   return (
     <I18nProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
+      <CartProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </CartProvider>
     </I18nProvider>
   );
 }

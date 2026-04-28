@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Menu, X, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronRight, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { useI18n, Lang } from "@/lib/i18n";
+import { useCart } from "@/lib/cart";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "lv", label: "LV" },
@@ -14,6 +15,7 @@ export function Navbar() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t, lang, setLang } = useI18n();
+  const { count } = useCart();
 
   const navLinks = [
     { href: "/moto", label: t.nav.moto },
@@ -48,33 +50,56 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Language Switcher */}
-        <div className="hidden md:flex items-center gap-1 flex-shrink-0">
-          {LANGS.map((l, i) => (
-            <span key={l.code} className="flex items-center">
-              <button
-                onClick={() => setLang(l.code)}
-                className={cn(
-                  "text-xs font-bold uppercase tracking-widest px-1 transition-colors",
-                  lang === l.code ? "text-primary" : "text-foreground/40 hover:text-foreground"
+        {/* Right: Language Switcher + Cart */}
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+          {/* Language */}
+          <div className="flex items-center gap-1">
+            {LANGS.map((l, i) => (
+              <span key={l.code} className="flex items-center">
+                <button
+                  onClick={() => setLang(l.code)}
+                  className={cn(
+                    "text-xs font-bold uppercase tracking-widest px-1 transition-colors",
+                    lang === l.code ? "text-primary" : "text-foreground/40 hover:text-foreground"
+                  )}
+                >
+                  {l.label}
+                </button>
+                {i < LANGS.length - 1 && (
+                  <span className="text-border text-xs">|</span>
                 )}
-              >
-                {l.label}
-              </button>
-              {i < LANGS.length - 1 && (
-                <span className="text-border text-xs">|</span>
-              )}
-            </span>
-          ))}
+              </span>
+            ))}
+          </div>
+
+          {/* Cart icon */}
+          <Link href="/cart" className="relative flex items-center justify-center h-9 w-9 hover:text-primary transition-colors text-foreground/60">
+            <ShoppingCart className="h-5 w-5" />
+            {count > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs font-black h-5 w-5 rounded-full flex items-center justify-center leading-none">
+                {count > 9 ? "9+" : count}
+              </span>
+            )}
+          </Link>
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          className="md:hidden text-foreground"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile: Cart + Menu Toggle */}
+        <div className="md:hidden flex items-center gap-3">
+          <Link href="/cart" className="relative flex items-center justify-center h-9 w-9 text-foreground/60">
+            <ShoppingCart className="h-5 w-5" />
+            {count > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs font-black h-5 w-5 rounded-full flex items-center justify-center leading-none">
+                {count > 9 ? "9+" : count}
+              </span>
+            )}
+          </Link>
+          <button
+            className="text-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Nav */}

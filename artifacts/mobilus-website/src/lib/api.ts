@@ -82,6 +82,49 @@ function jsonHeaders(): HeadersInit {
   return { "Content-Type": "application/json" };
 }
 
+export interface ApiOrderItem {
+  productId: number;
+  slug: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+  sku: string;
+  colorName?: string;
+}
+
+export interface ApiDeliveryAddress {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  company?: string;
+  buyForCompany?: boolean;
+}
+
+export interface ApiOrder {
+  id: number;
+  status: string;
+  paymentMethod: string;
+  stripeSessionId: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  deliveryAddress: ApiDeliveryAddress;
+  items: ApiOrderItem[];
+  subtotal: number;
+  vat: number;
+  total: number;
+  discountCode: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const api = {
   products: {
     list: () => request<ApiProduct[]>("/products"),
@@ -163,6 +206,22 @@ export const api = {
       request<{ success: boolean }>(`/inquiries/${id}`, {
         method: "DELETE",
         headers: adminHeaders(key),
+      }),
+  },
+  orders: {
+    listAll: (key: string) =>
+      request<ApiOrder[]>("/orders", { headers: adminHeaders(key) }),
+    create: (data: Omit<ApiOrder, "id" | "createdAt" | "updatedAt">) =>
+      request<ApiOrder>("/orders", {
+        method: "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify(data),
+      }),
+    patch: (id: number, data: Partial<ApiOrder>, key: string) =>
+      request<ApiOrder>(`/orders/${id}`, {
+        method: "PATCH",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
       }),
   },
 };
