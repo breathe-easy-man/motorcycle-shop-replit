@@ -1032,8 +1032,8 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Test Drive CTA */}
-              <div className="mt-10 max-w-xl border border-primary/30 bg-primary/5 p-6 flex items-center justify-between">
+              {/* Test Drive CTA — moto only */}
+              {parentSection === "moto" && <div className="mt-10 max-w-xl border border-primary/30 bg-primary/5 p-6 flex items-center justify-between">
                 <div>
                   <p className="font-black text-foreground uppercase tracking-wider text-sm mb-1">
                     {lang === "lv" ? "Izmēģini braukšanu" : lang === "ru" ? "Тест-драйв" : "Test Drive"}
@@ -1043,12 +1043,12 @@ export default function ProductPage() {
                   </p>
                 </div>
                 <Link href="/contact">
-                  <Button className="bg-primary hover:bg-primary/90 text-foreground rounded-none h-10 text-xs font-black uppercase tracking-widest ml-4 flex-shrink-0">
+                  <Button className="bg-primary hover:bg-primary/90 text-white rounded-none h-10 text-xs font-black uppercase tracking-widest ml-4 flex-shrink-0">
                     <Phone className="mr-2 h-3 w-3" />
                     {lang === "lv" ? "Pieteikties" : lang === "ru" ? "Записаться" : "Book Now"}
                   </Button>
                 </Link>
-              </div>
+              </div>}
             </motion.div>
           )}
         </div>
