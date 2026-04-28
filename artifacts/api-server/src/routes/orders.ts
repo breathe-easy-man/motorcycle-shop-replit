@@ -107,11 +107,10 @@ router.post("/orders", async (req, res) => {
       return { ...i, price: authorativePrice };
     });
 
-    const subtotalExcl = Math.round(
-      enrichedItems.reduce((acc, i) => acc + i.price * i.quantity, 0) / (1 + VAT_RATE)
-    );
-    const vatAmount = Math.round(subtotalExcl * VAT_RATE);
-    const totalAmount = subtotalExcl + vatAmount;
+    const grossTotal = Math.round(enrichedItems.reduce((acc, i) => acc + i.price * i.quantity, 0));
+    const subtotalExcl = Math.round(grossTotal / (1 + VAT_RATE));
+    const vatAmount = grossTotal - subtotalExcl;
+    const totalAmount = grossTotal;
 
     const [order] = await db.insert(ordersTable).values({
       status: "pending",
