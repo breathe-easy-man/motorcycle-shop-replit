@@ -318,6 +318,15 @@ export default function AdminPage() {
     } catch {}
   }
 
+  async function toggleFeatured(id: number) {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+    try {
+      const updated = await api.products.update(id, { featured: !product.featured }, adminKey);
+      setProducts((p) => p.map((x) => (x.id === updated.id ? updated : x)));
+    } catch {}
+  }
+
   async function approveReview(id: number) {
     try {
       const updated = await api.reviews.approve(id, adminKey);
@@ -515,6 +524,7 @@ export default function AdminPage() {
                       <th className="text-left px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort("stock")}>
                         Stock <SortIcon field="stock" />
                       </th>
+                      <th className="text-left px-4 py-3 font-semibold">Featured</th>
                       <th className="text-left px-4 py-3 font-semibold">Specs</th>
                       <th className="text-left px-4 py-3 font-semibold">Manufacturer</th>
                       <th className="text-right px-4 py-3 font-semibold">Actions</th>
@@ -522,7 +532,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {filtered.length === 0 && (
-                      <tr><td colSpan={9} className="text-center text-muted-foreground py-12">No products found</td></tr>
+                      <tr><td colSpan={10} className="text-center text-muted-foreground py-12">No products found</td></tr>
                     )}
                     {filtered.map((p) => (
                       <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
@@ -556,6 +566,16 @@ export default function AdminPage() {
                               <ChevronUp className="h-3 w-3" />
                             </button>
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleFeatured(p.id)}
+                            title={p.featured ? "Featured — click to unfeature" : "Not featured — click to feature"}
+                            aria-label={p.featured ? `Unfeature ${p.name}` : `Feature ${p.name} on homepage`}
+                            className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${p.featured ? "text-amber-400 hover:text-amber-300" : "text-muted-foreground/40 hover:text-amber-400"}`}
+                          >
+                            <Star className={`h-4 w-4 ${p.featured ? "fill-amber-400" : ""}`} />
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {p.specs.length > 0 ? (
