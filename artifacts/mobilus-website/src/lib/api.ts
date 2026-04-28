@@ -220,7 +220,7 @@ export const api = {
     patch: (id: number, data: Partial<ApiOrder>, key: string) =>
       request<ApiOrder>(`/orders/${id}`, {
         method: "PATCH",
-        headers: adminHeaders(key),
+        headers: { ...adminHeaders(key), "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }),
   },
