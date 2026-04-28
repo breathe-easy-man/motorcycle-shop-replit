@@ -130,6 +130,9 @@ router.post("/orders/stripe-webhook", async (req, res) => {
       res.status(400).json({ error: "Webhook signature verification failed" });
       return;
     }
+  } else if (process.env["NODE_ENV"] === "production") {
+    res.status(400).json({ error: "STRIPE_WEBHOOK_SECRET is required in production" });
+    return;
   } else {
     try {
       event = JSON.parse(rawBody.toString()) as import("stripe").Stripe.Event;

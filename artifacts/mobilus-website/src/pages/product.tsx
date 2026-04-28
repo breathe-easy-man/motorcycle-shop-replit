@@ -184,7 +184,7 @@ export default function ProductPage() {
 
   const [firstPaymentPct, setFirstPaymentPct] = useState(10);
   const [term, setTerm] = useState(24);
-  const [financingMode, setFinancingMode] = useState<"cash" | "incredit" | "uno">("incredit");
+  const [financingMode, setFinancingMode] = useState<"cash" | "inbank" | "klix">("inbank");
 
   const [activeTab, setActiveTab] = useState<TabKey>("apraksts");
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -246,11 +246,11 @@ export default function ProductPage() {
     }
   }, [product, slug]);
 
-  const monthlyIncredit = useMemo(
+  const monthlyInBank = useMemo(
     () => product ? calcMonthly(product.price, firstPaymentPct, term) : 0,
     [product, firstPaymentPct, term]
   );
-  const monthlyUno = useMemo(
+  const monthlyKlix = useMemo(
     () => product ? calcMonthly(product.price, firstPaymentPct, term) * 1.02 : 0,
     [product, firstPaymentPct, term]
   );
@@ -542,35 +542,35 @@ export default function ProductPage() {
                   }`}
                 >
                   <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "cash" ? "text-primary" : "text-muted-foreground"}`}>
-                    {lang === "lv" ? "Uzreiz" : lang === "ru" ? "Сразу" : "Cash"}
+                    {lang === "lv" ? "Uzreiz" : lang === "ru" ? "Сразу" : "Pay Now"}
                   </div>
                   <div className="text-lg font-black text-foreground">€{product.price.toLocaleString()}</div>
                   {discountPct && <div className="text-xs text-emerald-400 font-bold mt-0.5">-{discountPct}%</div>}
                 </button>
 
                 <button
-                  onClick={() => setFinancingMode("incredit")}
+                  onClick={() => setFinancingMode("inbank")}
                   className={`p-4 border text-left transition-all duration-200 ${
-                    financingMode === "incredit" ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 bg-card"
+                    financingMode === "inbank" ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 bg-card"
                   }`}
                 >
-                  <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "incredit" ? "text-primary" : "text-muted-foreground"}`}>
-                    IN<span className="text-primary">CREDIT</span>
+                  <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "inbank" ? "text-primary" : "text-muted-foreground"}`}>
+                    IN<span className="text-primary">BANK</span>
                   </div>
-                  <div className="text-lg font-black text-foreground">€{monthlyIncredit.toFixed(0)}</div>
+                  <div className="text-lg font-black text-foreground">€{monthlyInBank.toFixed(0)}</div>
                   <div className="text-xs text-muted-foreground">/{moLabel}</div>
                 </button>
 
                 <button
-                  onClick={() => setFinancingMode("uno")}
+                  onClick={() => setFinancingMode("klix")}
                   className={`p-4 border text-left transition-all duration-200 ${
-                    financingMode === "uno" ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 bg-card"
+                    financingMode === "klix" ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 bg-card"
                   }`}
                 >
-                  <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "uno" ? "text-primary" : "text-muted-foreground"}`}>
-                    UNO<span className="text-primary">LEASING</span>
+                  <div className={`text-xs font-bold uppercase tracking-wider mb-2 ${financingMode === "klix" ? "text-primary" : "text-muted-foreground"}`}>
+                    KLIX
                   </div>
-                  <div className="text-lg font-black text-foreground">€{monthlyUno.toFixed(0)}</div>
+                  <div className="text-lg font-black text-foreground">€{monthlyKlix.toFixed(0)}</div>
                   <div className="text-xs text-muted-foreground">/{moLabel}</div>
                 </button>
               </div>
@@ -1188,11 +1188,11 @@ export default function ProductPage() {
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t.product.monthly}</p>
                     <div className="text-5xl font-black text-foreground">
-                      €{monthlyIncredit.toFixed(0)}
+                      €{monthlyInBank.toFixed(0)}
                       <span className="text-base font-normal text-muted-foreground ml-2">/{moLabel}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      IN<span className="text-primary font-black">CREDIT</span>
+                      IN<span className="text-primary font-black">BANK</span>
                     </p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
@@ -1206,11 +1206,11 @@ export default function ProductPage() {
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{t.product.monthly}</p>
                     <div className="text-5xl font-black text-foreground">
-                      €{monthlyUno.toFixed(0)}
+                      €{monthlyKlix.toFixed(0)}
                       <span className="text-base font-normal text-muted-foreground ml-2">/{moLabel}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      UNO<span className="text-primary font-black">LEASING</span>
+                      <span className="text-primary font-black">KLIX</span>
                     </p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
