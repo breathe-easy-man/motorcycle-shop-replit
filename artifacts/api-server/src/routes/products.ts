@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, asc } from "drizzle-orm";
 import { db, productsTable, productVariantsTable, insertProductSchema, updateProductSchema, insertProductVariantSchema, updateProductVariantSchema } from "@workspace/db";
 import { requireAdmin } from "../middlewares/adminAuth";
 
@@ -24,9 +24,12 @@ async function attachVariants(products: ProductRow[]) {
   return products.map((p) => ({ ...p, variants: variantsByProduct[p.id] ?? [] }));
 }
 
-router.get("/products", async (_req, res) => {
+router.get("/products", async (req, res) => {
   try {
-    const rows = await db.select().from(productsTable).orderBy(productsTable.id);
+    const featuredOnly = req.query.featured === "true";
+    const rows = featuredOnly
+      ? await db.select().from(productsTable).where(eq(productsTable.featured, true)).orderBy(asc(productsTable.id))
+      : await db.select().from(productsTable).orderBy(asc(productsTable.id));
     const withVariants = await attachVariants(rows);
     res.json(withVariants);
   } catch (err) {

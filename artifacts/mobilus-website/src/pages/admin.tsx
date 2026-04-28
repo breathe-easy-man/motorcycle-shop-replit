@@ -33,6 +33,7 @@ const emptyForm = (): FormState => ({
   image: "",
   badge: null,
   stock: 0,
+  featured: false,
   descriptionLv: "",
   descriptionEn: "",
   descriptionRu: "",
@@ -174,7 +175,7 @@ export default function AdminPage() {
     setForm({
       slug: p.slug, name: p.name, price: p.price, oldPrice: p.oldPrice,
       category: p.category, engine: p.engine, image: p.image, badge: p.badge,
-      stock: p.stock, descriptionLv: p.descriptionLv, descriptionEn: p.descriptionEn,
+      stock: p.stock, featured: p.featured ?? false, descriptionLv: p.descriptionLv, descriptionEn: p.descriptionEn,
       descriptionRu: p.descriptionRu, specs: p.specs,
       manufacturerLogoUrl: p.manufacturerLogoUrl ?? null,
       manufacturerYoutubeId: p.manufacturerYoutubeId ?? null,
@@ -356,12 +357,12 @@ export default function AdminPage() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="text-3xl font-black uppercase tracking-tighter text-white mb-1">
+            <div className="text-3xl font-black uppercase tracking-tighter text-foreground mb-1">
               MOBILUS<span className="text-primary">.</span>
             </div>
             <p className="text-muted-foreground text-sm">Admin Panel</p>
           </div>
-          <div className="border border-white/10 bg-white/5 p-6">
+          <div className="border border-border bg-card shadow-sm p-6">
             <label className="block text-sm text-muted-foreground mb-2">Admin Key</label>
             <Input
               type="password"
@@ -389,9 +390,9 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="border-b border-white/10 bg-black/40 sticky top-0 z-40 backdrop-blur">
+      <header className="border-b border-border bg-white sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="font-black uppercase tracking-tighter text-lg">
             MOBILUS<span className="text-primary">.</span>{" "}
@@ -409,7 +410,7 @@ export default function AdminPage() {
                   key={key}
                   onClick={() => setActiveTab(key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors rounded-none ${
-                    activeTab === key ? "text-primary" : "text-muted-foreground hover:text-white"
+                    activeTab === key ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -422,7 +423,7 @@ export default function AdminPage() {
                 </button>
               ))}
             </nav>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-white">
+            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-4 w-4 mr-1" /> Sign out
             </Button>
           </div>
@@ -453,7 +454,7 @@ export default function AdminPage() {
                 {["All", ...CATEGORIES].map((c) => (
                   <button key={c} onClick={() => setFilterCat(c)}
                     className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-colors ${
-                      filterCat === c ? "bg-primary border-primary text-white" : "border-white/20 text-muted-foreground hover:border-white/50"
+                      filterCat === c ? "bg-primary border-primary text-white" : "border-border text-muted-foreground hover:border-foreground/40"
                     }`}
                   >
                     {c}
@@ -463,15 +464,15 @@ export default function AdminPage() {
             </div>
 
             {productError && (
-              <div className="bg-red-900/30 border border-red-500/30 text-red-400 px-4 py-3 mb-4 text-sm">{productError}</div>
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 mb-4 text-sm">{productError}</div>
             )}
 
             {loadingProducts ? (
               <div className="text-muted-foreground py-16 text-center">Loading products...</div>
             ) : (
-              <div className="overflow-x-auto border border-white/10">
+              <div className="overflow-x-auto border border-border">
                 <table className="w-full text-sm">
-                  <thead className="bg-white/5 border-b border-white/10">
+                  <thead className="bg-muted/50 border-b border-border">
                     <tr>
                       <th className="text-left px-4 py-3 font-semibold cursor-pointer select-none whitespace-nowrap" onClick={() => toggleSort("id")}>
                         ID <SortIcon field="id" />
@@ -499,10 +500,10 @@ export default function AdminPage() {
                       <tr><td colSpan={9} className="text-center text-muted-foreground py-12">No products found</td></tr>
                     )}
                     {filtered.map((p) => (
-                      <tr key={p.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                      <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3 text-muted-foreground">{p.id}</td>
                         <td className="px-4 py-3">
-                          <img src={p.image} alt={p.name} className="h-12 w-16 object-contain bg-white/5 rounded"
+                          <img src={p.image} alt={p.name} className="h-12 w-16 object-contain bg-muted/50 rounded"
                             onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
                             referrerPolicy="no-referrer"
                           />
@@ -519,35 +520,35 @@ export default function AdminPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <button onClick={() => updateStock(p.id, -1)}
-                              className="h-6 w-6 flex items-center justify-center border border-white/20 hover:border-white/50 text-muted-foreground hover:text-white transition-colors">
+                              className="h-6 w-6 flex items-center justify-center border border-border hover:border-foreground/40 text-muted-foreground hover:text-foreground transition-colors">
                               <ChevronDown className="h-3 w-3" />
                             </button>
-                            <span className={`w-8 text-center font-semibold ${p.stock === 0 ? "text-red-400" : p.stock <= 2 ? "text-yellow-400" : "text-green-400"}`}>
+                            <span className={`w-8 text-center font-semibold ${p.stock === 0 ? "text-red-500" : p.stock <= 2 ? "text-amber-500" : "text-emerald-600"}`}>
                               {p.stock}
                             </span>
                             <button onClick={() => updateStock(p.id, 1)}
-                              className="h-6 w-6 flex items-center justify-center border border-white/20 hover:border-white/50 text-muted-foreground hover:text-white transition-colors">
+                              className="h-6 w-6 flex items-center justify-center border border-border hover:border-foreground/40 text-muted-foreground hover:text-foreground transition-colors">
                               <ChevronUp className="h-3 w-3" />
                             </button>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
                           {p.specs.length > 0 ? (
-                            <span className="text-emerald-400">{p.specs.length} rows</span>
+                            <span className="text-emerald-600">{p.specs.length} rows</span>
                           ) : (
-                            <span className="text-zinc-600">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs">
                           {p.manufacturerYoutubeId ? (
-                            <span className="text-emerald-400">Video ✓</span>
+                            <span className="text-emerald-600">Video ✓</span>
                           ) : (
-                            <span className="text-zinc-600">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(p)} className="h-8 w-8 p-0 text-muted-foreground hover:text-white">
+                            <Button variant="ghost" size="sm" onClick={() => openEdit(p)} className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(p)} className="h-8 w-8 p-0 text-muted-foreground hover:text-red-400">
@@ -574,7 +575,7 @@ export default function AdminPage() {
                   {reviews.length} total · <span className="text-amber-400">{pendingReviews} pending approval</span>
                 </p>
               </div>
-              <Button variant="outline" onClick={loadReviews} className="rounded-none border-white/20 text-muted-foreground hover:text-white">
+              <Button variant="outline" onClick={loadReviews} className="rounded-none border-border text-muted-foreground hover:text-foreground">
                 Refresh
               </Button>
             </div>
@@ -582,21 +583,21 @@ export default function AdminPage() {
             {loadingReviews ? (
               <div className="text-muted-foreground py-16 text-center">Loading reviews...</div>
             ) : reviews.length === 0 ? (
-              <div className="text-center py-20 border border-white/10">
+              <div className="text-center py-20 border border-border">
                 <Star className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground">No reviews yet</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {reviews.map((r) => (
-                  <div key={r.id} className={`border p-5 transition-colors ${r.approved ? "border-white/10 bg-white/2" : "border-amber-500/30 bg-amber-500/5"}`}>
+                  <div key={r.id} className={`border p-5 transition-colors ${r.approved ? "border-border bg-card" : "border-amber-400/40 bg-amber-50"}`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <span className="font-bold text-white">{r.name}</span>
+                          <span className="font-bold text-foreground">{r.name}</span>
                           <div className="flex gap-0.5">
                             {[1,2,3,4,5].map(s => (
-                              <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? "text-primary fill-primary" : "text-white/20"}`} />
+                              <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? "text-primary fill-primary" : "text-muted"}`} />
                             ))}
                           </div>
                           <span className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</span>
@@ -639,7 +640,7 @@ export default function AdminPage() {
                   {inquiries.length} total · <span className="text-primary">{unreadInquiries} unread</span>
                 </p>
               </div>
-              <Button variant="outline" onClick={loadInquiries} className="rounded-none border-white/20 text-muted-foreground hover:text-white">
+              <Button variant="outline" onClick={loadInquiries} className="rounded-none border-border text-muted-foreground hover:text-foreground">
                 Refresh
               </Button>
             </div>
@@ -647,18 +648,18 @@ export default function AdminPage() {
             {loadingInquiries ? (
               <div className="text-muted-foreground py-16 text-center">Loading inquiries...</div>
             ) : inquiries.length === 0 ? (
-              <div className="text-center py-20 border border-white/10">
+              <div className="text-center py-20 border border-border">
                 <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground">No inquiries yet</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {inquiries.map((q) => (
-                  <div key={q.id} className={`border p-5 transition-colors ${q.read ? "border-white/10 bg-white/2" : "border-primary/30 bg-primary/5"}`}>
+                  <div key={q.id} className={`border p-5 transition-colors ${q.read ? "border-border bg-card" : "border-primary/40 bg-primary/5"}`}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap mb-3">
-                          <span className="font-bold text-white">{q.name}</span>
+                          <span className="font-bold text-foreground">{q.name}</span>
                           {!q.read && (
                             <Badge className="bg-primary/20 text-primary border-primary/30 text-xs rounded-none">New</Badge>
                           )}
@@ -667,11 +668,11 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                           <div className="flex items-center gap-2">
                             <Phone className="h-3.5 w-3.5 text-primary" />
-                            <a href={`tel:${q.phone}`} className="text-white hover:text-primary transition-colors">{q.phone}</a>
+                            <a href={`tel:${q.phone}`} className="text-foreground hover:text-primary transition-colors">{q.phone}</a>
                           </div>
                           <div className="flex items-center gap-2">
                             <Mail className="h-3.5 w-3.5 text-primary" />
-                            <a href={`mailto:${q.email}`} className="text-white hover:text-primary transition-colors">{q.email}</a>
+                            <a href={`mailto:${q.email}`} className="text-foreground hover:text-primary transition-colors">{q.email}</a>
                           </div>
                           <div className="flex items-center gap-2">
                             <Package className="h-3.5 w-3.5 text-primary" />
@@ -682,7 +683,7 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {!q.read && (
                           <Button variant="ghost" size="sm" onClick={() => markInquiryRead(q.id)}
-                            className="h-8 px-3 text-muted-foreground hover:text-white text-xs font-bold">
+                            className="h-8 px-3 text-muted-foreground hover:text-foreground text-xs font-bold">
                             <Eye className="h-3.5 w-3.5 mr-1" /> Mark read
                           </Button>
                         )}
@@ -703,18 +704,18 @@ export default function AdminPage() {
       {/* ===== PRODUCT EDIT/ADD MODAL ===== */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-sm overflow-y-auto py-8 px-4">
-          <div className="w-full max-w-3xl bg-zinc-900 border border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div className="w-full max-w-3xl bg-white border border-border shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h2 className="font-black uppercase tracking-tighter text-lg">
                 {modal === "add" ? "Add Product" : `Edit: ${editing?.name}`}
               </h2>
-              <button onClick={closeModal} className="text-muted-foreground hover:text-white transition-colors">
+              <button onClick={closeModal} className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Form tabs */}
-            <div className="flex border-b border-white/10 overflow-x-auto">
+            <div className="flex border-b border-border overflow-x-auto">
               {([
                 { key: "basic" as const, label: "Basic Info" },
                 { key: "desc" as const, label: "Descriptions" },
@@ -724,7 +725,7 @@ export default function AdminPage() {
               ]).map(({ key, label }) => (
                 <button key={key} onClick={() => setActiveFormTab(key)}
                   className={`flex-shrink-0 px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
-                    activeFormTab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-white"
+                    activeFormTab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {label}
@@ -748,7 +749,7 @@ export default function AdminPage() {
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Category</label>
                     <select value={form.category} onChange={(e) => setField("category", e.target.value)}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white">
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground">
                       {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                     </select>
                   </div>
@@ -772,6 +773,19 @@ export default function AdminPage() {
                     <label className="block text-xs text-muted-foreground mb-1">Badge (optional)</label>
                     <Input value={form.badge ?? ""} onChange={(e) => setField("badge", e.target.value || null)} className="rounded-none" placeholder="e.g. POPULĀRS / -10%" />
                   </div>
+                  <div className="col-span-2 flex items-center gap-3 py-1">
+                    <input
+                      type="checkbox"
+                      id="featured-checkbox"
+                      checked={form.featured ?? false}
+                      onChange={(e) => setField("featured", e.target.checked)}
+                      className="h-4 w-4 accent-primary cursor-pointer"
+                    />
+                    <label htmlFor="featured-checkbox" className="text-sm text-foreground cursor-pointer select-none">
+                      Feature on homepage
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">(shows this product in the spotlight section)</span>
+                    </label>
+                  </div>
                   <div className="col-span-2">
                     <label className="block text-xs text-muted-foreground mb-1">
                       Image URL
@@ -782,18 +796,18 @@ export default function AdminPage() {
                       )}
                     </label>
                     {variantItems.length > 0 ? (
-                      <div className="border border-white/10 bg-white/3 px-3 py-2 rounded-none">
+                      <div className="border border-border bg-muted/30 px-3 py-2 rounded-none">
                         <div className="flex items-center gap-3">
                           {variantItems[0].image ? (
                             <img
                               src={variantItems[0].image}
                               alt="first variant preview"
-                              className="h-14 w-20 object-contain bg-white/5 flex-shrink-0"
+                              className="h-14 w-20 object-contain bg-muted/50 flex-shrink-0"
                               onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
                               referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <div className="h-14 w-20 bg-white/5 flex-shrink-0 flex items-center justify-center">
+                            <div className="h-14 w-20 bg-muted/50 flex-shrink-0 flex items-center justify-center">
                               <span className="text-xs text-muted-foreground">No image</span>
                             </div>
                           )}
@@ -811,7 +825,7 @@ export default function AdminPage() {
                       <>
                         <Input value={form.image} onChange={(e) => setField("image", e.target.value)} className="rounded-none font-mono text-sm" placeholder="https://..." />
                         {form.image && (
-                          <img src={form.image} alt="preview" className="mt-2 h-20 object-contain bg-white/5 rounded"
+                          <img src={form.image} alt="preview" className="mt-2 h-20 object-contain bg-muted/50 rounded"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                             referrerPolicy="no-referrer"
                           />
@@ -828,17 +842,17 @@ export default function AdminPage() {
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Description (Latvian)</label>
                     <textarea value={form.descriptionLv} onChange={(e) => setField("descriptionLv", e.target.value)} rows={4}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white resize-none" />
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none" />
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Description (English)</label>
                     <textarea value={form.descriptionEn} onChange={(e) => setField("descriptionEn", e.target.value)} rows={4}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white resize-none" />
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none" />
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Description (Russian)</label>
                     <textarea value={form.descriptionRu} onChange={(e) => setField("descriptionRu", e.target.value)} rows={4}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white resize-none" />
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none" />
                   </div>
                 </div>
               )}
@@ -856,21 +870,21 @@ export default function AdminPage() {
                   </div>
 
                   {form.specs.length === 0 ? (
-                    <div className="text-center py-10 border border-dashed border-white/20">
+                    <div className="text-center py-10 border border-dashed border-border">
                       <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-muted-foreground text-sm">No specs yet. Click "Add Spec" to start.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {form.specs.map((spec, i) => (
-                        <div key={i} className="border border-white/10 p-4 bg-white/3">
+                        <div key={i} className="border border-border p-4 bg-muted/20">
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">Spec #{i + 1}</span>
                             <div className="flex items-center gap-1">
-                              <button onClick={() => moveSpec(i, -1)} disabled={i === 0} className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-white disabled:opacity-30">
+                              <button onClick={() => moveSpec(i, -1)} disabled={i === 0} className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30">
                                 <ChevronUp className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={() => moveSpec(i, 1)} disabled={i === form.specs.length - 1} className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-white disabled:opacity-30">
+                              <button onClick={() => moveSpec(i, 1)} disabled={i === form.specs.length - 1} className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30">
                                 <ChevronDown className="h-3.5 w-3.5" />
                               </button>
                               <button onClick={() => removeSpec(i)} className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-red-400">
@@ -918,19 +932,19 @@ export default function AdminPage() {
                   </div>
 
                   {variantItems.length === 0 ? (
-                    <div className="text-center py-10 border border-dashed border-white/20">
+                    <div className="text-center py-10 border border-dashed border-border">
                       <Palette className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-muted-foreground text-sm">No color variants. Click "Add Color" to start.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {variantItems.map((v, i) => (
-                        <div key={i} className="border border-white/10 p-4 bg-white/3">
+                        <div key={i} className="border border-border p-4 bg-muted/20">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               {v.colorHex && (
                                 <span
-                                  className="h-4 w-4 rounded-full border border-white/30 flex-shrink-0"
+                                  className="h-4 w-4 rounded-full border border-border flex-shrink-0"
                                   style={{ backgroundColor: v.colorHex }}
                                 />
                               )}
@@ -963,7 +977,7 @@ export default function AdminPage() {
                                 />
                                 {v.colorHex && (
                                   <span
-                                    className="h-8 w-8 rounded-none border border-white/20 flex-shrink-0"
+                                    className="h-8 w-8 rounded-none border border-border flex-shrink-0"
                                     style={{ backgroundColor: v.colorHex }}
                                   />
                                 )}
@@ -982,7 +996,7 @@ export default function AdminPage() {
                                   <img
                                     src={v.image}
                                     alt="preview"
-                                    className="h-8 w-12 object-contain bg-white/5 flex-shrink-0"
+                                    className="h-8 w-12 object-contain bg-muted/50 flex-shrink-0"
                                     onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
                                     referrerPolicy="no-referrer"
                                   />
@@ -1010,7 +1024,7 @@ export default function AdminPage() {
               {/* Manufacturer */}
               {activeFormTab === "manufacturer" && (
                 <div className="space-y-4">
-                  <div className="bg-white/3 border border-white/10 p-4 text-xs text-muted-foreground mb-4">
+                  <div className="bg-muted/30 border border-border p-4 text-xs text-muted-foreground mb-4">
                     These fields appear in the "Ražotājs" (Manufacturer) tab on the product page. Leave blank to use the default brand info based on the product name.
                   </div>
                   <div>
@@ -1030,34 +1044,34 @@ export default function AdminPage() {
                     <label className="block text-xs text-muted-foreground mb-1">YouTube Video ID (optional)</label>
                     <Input value={form.manufacturerYoutubeId ?? ""} onChange={(e) => setField("manufacturerYoutubeId", e.target.value || null)}
                       className="rounded-none font-mono text-sm" placeholder="g4bYdBGppyI" />
-                    <p className="text-xs text-zinc-600 mt-1">Just the video ID from the YouTube URL (e.g. youtube.com/watch?v=<strong>g4bYdBGppyI</strong>)</p>
+                    <p className="text-xs text-muted-foreground mt-1">Just the video ID from the YouTube URL (e.g. youtube.com/watch?v=<strong>g4bYdBGppyI</strong>)</p>
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Manufacturer Description (Latvian)</label>
                     <textarea value={form.manufacturerDescLv ?? ""} onChange={(e) => setField("manufacturerDescLv", e.target.value || null)} rows={3}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white resize-none" />
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none" />
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Manufacturer Description (English)</label>
                     <textarea value={form.manufacturerDescEn ?? ""} onChange={(e) => setField("manufacturerDescEn", e.target.value || null)} rows={3}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white resize-none" />
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none" />
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Manufacturer Description (Russian)</label>
                     <textarea value={form.manufacturerDescRu ?? ""} onChange={(e) => setField("manufacturerDescRu", e.target.value || null)} rows={3}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-white resize-none" />
+                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none" />
                   </div>
                 </div>
               )}
             </div>
 
             {formError && (
-              <div className="mx-6 bg-red-900/30 border border-red-500/30 text-red-400 px-4 py-2 text-sm flex items-center gap-2">
+              <div className="mx-6 bg-red-50 border border-red-200 text-red-600 px-4 py-2 text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" /> {formError}
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-white/10">
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border">
               <p className="text-xs text-muted-foreground">
                 {form.specs.length} spec{form.specs.length !== 1 ? "s" : ""} · {variantItems.length} color{variantItems.length !== 1 ? "s" : ""} · {form.image ? "Image set" : "No image"}
               </p>
@@ -1076,13 +1090,13 @@ export default function AdminPage() {
       {/* Delete confirm modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm bg-zinc-900 border border-white/10 p-6">
+          <div className="w-full max-w-sm bg-white border border-border p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
-              <Package className="h-6 w-6 text-red-400" />
+              <Package className="h-6 w-6 text-red-500" />
               <h3 className="font-bold text-lg">Delete Product</h3>
             </div>
             <p className="text-muted-foreground text-sm mb-6">
-              Are you sure you want to delete <span className="text-white font-semibold">{deleteConfirm.name}</span>? This cannot be undone.
+              Are you sure you want to delete <span className="text-foreground font-semibold">{deleteConfirm.name}</span>? This cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <Button variant="ghost" onClick={() => setDeleteConfirm(null)} disabled={deleting}>Cancel</Button>

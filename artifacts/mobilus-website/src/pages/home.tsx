@@ -23,6 +23,7 @@ interface Product {
   oldPrice: number | null;
   engine: string | null;
   badge: string | null;
+  featured: boolean;
   image: string;
   description: string | null;
   stock: number;
@@ -45,25 +46,33 @@ function getProductHref(product: Product): string {
 export default function Home() {
   const { t } = useI18n();
   const [products, setProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [hoveredImages, setHoveredImages] = useState<Record<number, string | null>>({});
 
   useEffect(() => {
-    fetch("/api/products")
+    const toList = (data: unknown): Product[] =>
+      Array.isArray(data) ? (data as Product[]) : ((data as { products?: Product[] }).products ?? []);
+
+    fetch("/api/products?featured=true")
       .then((r) => r.json())
       .then((data) => {
-        const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
-        setProducts(list);
+        const featured = toList(data).slice(0, 4);
+        if (featured.length > 0) {
+          setFeaturedProducts(featured);
+          return Promise.resolve();
+        }
+        return fetch("/api/products")
+          .then((r) => r.json())
+          .then((allData) => {
+            const all = toList(allData);
+            setProducts(all);
+            setFeaturedProducts(all.slice(0, 4));
+          });
       })
-      .catch(() => setProducts([]))
+      .catch(() => setFeaturedProducts([]))
       .finally(() => setLoadingProducts(false));
   }, []);
-
-  const featuredProducts = (() => {
-    const withBadge = products.filter((p) => p.badge || p.oldPrice);
-    const pool = withBadge.length >= 4 ? withBadge : products;
-    return pool.slice(0, 4);
-  })();
 
   const categories = [
     {

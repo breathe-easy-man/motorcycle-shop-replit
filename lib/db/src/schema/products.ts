@@ -13,6 +13,7 @@ export const productsTable = pgTable("products", {
   image: text("image").notNull(),
   badge: text("badge"),
   stock: integer("stock").notNull().default(0),
+  featured: boolean("featured").notNull().default(false),
   descriptionLv: text("description_lv").notNull().default(""),
   descriptionEn: text("description_en").notNull().default(""),
   descriptionRu: text("description_ru").notNull().default(""),

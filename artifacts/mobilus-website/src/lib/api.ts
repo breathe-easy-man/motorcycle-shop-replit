@@ -25,6 +25,7 @@ export interface ApiProduct {
   image: string;
   badge: string | null;
   stock: number;
+  featured: boolean;
   descriptionLv: string;
   descriptionEn: string;
   descriptionRu: string;
