@@ -322,12 +322,16 @@ export const api = {
   availability: {
     getByProduct: (productId: number) =>
       request<ApiAvailability>(`/products/${productId}/availability`),
+    getByProductAdmin: (productId: number, key: string) =>
+      request<{ entries: ApiAvailabilityEntryAdmin[]; totalStock: number }>(`/products/${productId}/availability/admin`, {
+        headers: adminHeaders(key),
+      }),
     create: (
       productId: number,
       data: { variantId?: number | null; locationId?: number | null; deliveryOptionId?: number | null; quantity: number; serialNumber?: string | null },
       key: string
     ) =>
-      request<ApiAvailabilityEntry>(`/products/${productId}/availability`, {
+      request<ApiAvailabilityEntryAdmin>(`/products/${productId}/availability`, {
         method: "POST",
         headers: adminHeaders(key),
         body: JSON.stringify(data),

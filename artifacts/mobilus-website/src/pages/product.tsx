@@ -683,15 +683,36 @@ export default function ProductPage() {
 
             {/* Availability */}
             {(availability || globalDeliveryOptions.length > 0) && (() => {
-              const storeEntries = availability?.entries.filter(e => e.locationName && e.locationIsActive) ?? [];
               const today = new Date();
               const toYMD = (d: Date) => d.toISOString().slice(0, 10);
-              const showBlock = storeEntries.length > 0 || globalDeliveryOptions.length > 0;
+
+              // Aggregate store entries by locationId — sum quantities per location, show only active locations with stock > 0
+              type StoreRow = { locationId: number; locationName: string; locationAddress: string | null; leadTimeDays: number; totalQty: number };
+              const locationMap = new Map<number, StoreRow>();
+              for (const e of (availability?.entries ?? [])) {
+                if (!e.locationId || !e.locationIsActive || !e.locationName) continue;
+                const existing = locationMap.get(e.locationId);
+                if (existing) {
+                  existing.totalQty += e.quantity;
+                } else {
+                  locationMap.set(e.locationId, {
+                    locationId: e.locationId,
+                    locationName: e.locationName,
+                    locationAddress: e.locationAddress ?? null,
+                    leadTimeDays: e.locationLeadTimeDays ?? 1,
+                    totalQty: e.quantity,
+                  });
+                }
+              }
+              const storeRows = Array.from(locationMap.values()).filter(r => r.totalQty > 0);
+
+              const showBlock = storeRows.length > 0 || globalDeliveryOptions.length > 0;
               if (!showBlock) return null;
+
               return (
                 <div className="border border-border bg-card mb-4 overflow-hidden">
                   {/* Stores accordion */}
-                  {storeEntries.length > 0 && (
+                  {storeRows.length > 0 && (
                     <div>
                       <button
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
@@ -705,24 +726,25 @@ export default function ProductPage() {
                       </button>
                       {availabilityOpenStores && (
                         <div className="border-t border-border px-4 pb-3 pt-2 space-y-2">
-                          {storeEntries.map((e) => {
-                            const leadDays = e.locationLeadTimeDays ?? 0;
+                          {storeRows.map((row) => {
                             const est = new Date(today);
-                            est.setDate(est.getDate() + leadDays);
+                            est.setDate(est.getDate() + row.leadTimeDays);
                             const estStr = toYMD(est);
+                            const pickupLabel = lang === "lv"
+                              ? `Saņem veikalā — bez maksas ${estStr}`
+                              : lang === "ru"
+                                ? `Самовывоз — бесплатно ${estStr}`
+                                : `Pick up in store — free ${estStr}`;
                             return (
-                              <div key={e.id} className="flex items-start justify-between gap-2 text-sm">
+                              <div key={row.locationId} className="flex items-start justify-between gap-2 text-sm">
                                 <div>
-                                  <span className="font-bold text-foreground">{e.locationName}</span>
-                                  {e.locationAddress && <p className="text-xs text-muted-foreground mt-0.5">{e.locationAddress}</p>}
-                                  {e.variantColorName && <p className="text-xs text-primary mt-0.5">{e.variantColorName}</p>}
+                                  <span className="font-bold text-foreground">{row.locationName}</span>
+                                  {row.locationAddress && <p className="text-xs text-muted-foreground mt-0.5">{row.locationAddress}</p>}
+                                  <p className="text-xs text-muted-foreground mt-0.5">{pickupLabel}</p>
                                 </div>
-                                <div className="text-right flex-shrink-0">
-                                  <span className={`text-xs font-bold ${e.quantity > 0 ? "text-emerald-500" : "text-orange-400"}`}>
-                                    {e.quantity > 0 ? (lang === "lv" ? `${e.quantity} gab.` : lang === "ru" ? `${e.quantity} шт.` : `${e.quantity} pcs`) : (lang === "lv" ? "Nav" : lang === "ru" ? "Нет" : "Out")}
-                                  </span>
-                                  {e.quantity > 0 && <p className="text-xs text-muted-foreground">{estStr}</p>}
-                                </div>
+                                <span className="text-xs font-bold text-emerald-500 flex-shrink-0">
+                                  {lang === "lv" ? `${row.totalQty} gab.` : lang === "ru" ? `${row.totalQty} шт.` : `${row.totalQty} pcs`}
+                                </span>
                               </div>
                             );
                           })}
@@ -732,7 +754,7 @@ export default function ProductPage() {
                   )}
                   {/* Delivery accordion — always shows globally active delivery options */}
                   {globalDeliveryOptions.length > 0 && (
-                    <div className={storeEntries.length > 0 ? "border-t border-border" : ""}>
+                    <div className={storeRows.length > 0 ? "border-t border-border" : ""}>
                       <button
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
                         onClick={() => setAvailabilityOpenDelivery(s => !s)}
@@ -750,17 +772,19 @@ export default function ProductPage() {
                             est.setDate(est.getDate() + d.leadTimeDays);
                             const estStr = toYMD(est);
                             const priceStr = d.priceMin === 0 && d.priceMax === 0
-                              ? (lang === "lv" ? "Bezmaksas" : lang === "ru" ? "Бесплатно" : "Free")
+                              ? (lang === "lv" ? "bezmaksas" : lang === "ru" ? "бесплатно" : "free")
                               : d.priceMin === d.priceMax
                                 ? `€${d.priceMin}`
                                 : `€${d.priceMin}–€${d.priceMax}`;
+                            const deliveryLabel = lang === "lv"
+                              ? `${d.name} — par ${priceStr} ${estStr}`
+                              : lang === "ru"
+                                ? `${d.name} — за ${priceStr} ${estStr}`
+                                : `${d.name} — ${priceStr} ${estStr}`;
                             return (
-                              <div key={d.id} className="flex items-start justify-between gap-2 text-sm">
-                                <span className="font-bold text-foreground">{d.name}</span>
-                                <div className="text-right flex-shrink-0">
-                                  <span className="text-xs font-bold text-foreground">{priceStr}</span>
-                                  <p className="text-xs text-muted-foreground">{lang === "lv" ? "Līdz" : lang === "ru" ? "До" : "By"} {estStr}</p>
-                                </div>
+                              <div key={d.id} className="flex items-start gap-2 text-sm">
+                                <Truck className="h-3.5 w-3.5 text-primary flex-shrink-0 mt-0.5" />
+                                <span className="text-foreground text-xs">{deliveryLabel}</span>
                               </div>
                             );
                           })}

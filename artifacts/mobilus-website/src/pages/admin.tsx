@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
-import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry } from "@/lib/api";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry, type ApiAvailabilityEntryAdmin } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -85,8 +85,8 @@ export default function AdminPage() {
   const [deliveryOptions, setDeliveryOptions] = useState<ApiDeliveryOption[]>([]);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
 
-  // Product-level stock entries (inside product editor modal)
-  const [productStockEntries, setProductStockEntries] = useState<ApiAvailabilityEntry[]>([]);
+  // Product-level stock entries (inside product editor modal) — admin version includes serialNumber
+  const [productStockEntries, setProductStockEntries] = useState<ApiAvailabilityEntryAdmin[]>([]);
   const [stockEntryForm, setStockEntryForm] = useState<{
     locationId: string; deliveryOptionId: string; variantId: string; quantity: number; serialNumber: string;
   }>({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
@@ -183,14 +183,14 @@ export default function AdminPage() {
   const loadProductStockEntries = useCallback(async (productId: number) => {
     setLoadingAvailability(true);
     try {
-      const data = await api.availability.getByProduct(productId);
+      const data = await api.availability.getByProductAdmin(productId, adminKey);
       setProductStockEntries(data.entries);
     } catch {
       setProductStockEntries([]);
     } finally {
       setLoadingAvailability(false);
     }
-  }, []);
+  }, [adminKey]);
 
   useEffect(() => {
     if (authed) {
@@ -1534,6 +1534,7 @@ export default function AdminPage() {
                             <th className="text-left px-3 py-2 font-bold">Veikals / Piegāde</th>
                             <th className="text-left px-3 py-2 font-bold">Krāsa</th>
                             <th className="text-left px-3 py-2 font-bold">Daudzums</th>
+                            <th className="text-left px-3 py-2 font-bold">Sērijas nr.</th>
                             <th className="text-right px-3 py-2"></th>
                           </tr>
                         </thead>
@@ -1549,6 +1550,7 @@ export default function AdminPage() {
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{e.variantColorName ?? "Base"}</td>
                               <td className="px-3 py-2 font-bold text-foreground">{e.quantity}</td>
+                              <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{e.serialNumber ?? "—"}</td>
                               <td className="px-3 py-2 text-right">
                                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400"
                                   onClick={async () => {
@@ -1619,13 +1621,14 @@ export default function AdminPage() {
                           const loc = locations.find(l => l.id === Number(stockEntryForm.locationId));
                           const del = deliveryOptions.find(d => d.id === Number(stockEntryForm.deliveryOptionId));
                           const variant = variantItems.find(v => v.id === Number(stockEntryForm.variantId));
-                          const enriched: ApiAvailabilityEntry = {
+                          const enriched: ApiAvailabilityEntryAdmin = {
                             id: created.id,
                             productId: created.productId,
                             variantId: created.variantId ?? null,
                             locationId: created.locationId ?? null,
                             deliveryOptionId: created.deliveryOptionId ?? null,
                             quantity: created.quantity,
+                            serialNumber: created.serialNumber ?? null,
                             locationName: loc?.name ?? null,
                             locationAddress: loc?.address ?? null,
                             locationLeadTimeDays: loc?.leadTimeDays ?? null,
