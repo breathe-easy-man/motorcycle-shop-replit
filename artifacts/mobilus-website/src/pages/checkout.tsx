@@ -39,6 +39,8 @@ export default function CheckoutPage() {
   const [payment, setPayment] = useState<PaymentMethod>("card");
   const [discountCode, setDiscountCode] = useState("");
   const [discountApplied, setDiscountApplied] = useState(false);
+  const [giftCode, setGiftCode] = useState("");
+  const [giftApplied, setGiftApplied] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -58,6 +60,7 @@ export default function CheckoutPage() {
     required: lang === "lv" ? "Obligāts lauks" : lang === "ru" ? "Обязательное поле" : "Required field",
     backToCart: lang === "lv" ? "← Atpakaļ uz grozu" : lang === "ru" ? "← Назад в корзину" : "← Back to Cart",
     discount: lang === "lv" ? "Atlaides kods" : lang === "ru" ? "Промокод" : "Discount Code",
+    gift: lang === "lv" ? "Dāvanu karte" : lang === "ru" ? "Подарочная карта" : "Gift Card",
     apply: lang === "lv" ? "Lietot" : lang === "ru" ? "Применить" : "Apply",
     applied: lang === "lv" ? "Pielietots!" : lang === "ru" ? "Применено!" : "Applied!",
   };
@@ -368,7 +371,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Discount code */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -385,6 +388,26 @@ export default function CheckoutPage() {
                   </button>
                 </div>
                 {discountApplied && <p className="text-xs text-emerald-500 mt-1">{labels.applied}</p>}
+              </div>
+
+              {/* Gift card */}
+              <div className="mb-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={giftCode}
+                    onChange={(e) => setGiftCode(e.target.value)}
+                    placeholder={labels.gift}
+                    className="flex-1 border border-border bg-background text-foreground text-xs px-3 py-2 focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    onClick={() => { if (giftCode) setGiftApplied(true); }}
+                    className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors"
+                  >
+                    {giftApplied ? "✓" : labels.apply}
+                  </button>
+                </div>
+                {giftApplied && <p className="text-xs text-emerald-500 mt-1">{labels.applied}</p>}
               </div>
 
               <div className="border-t border-border pt-4 space-y-2">

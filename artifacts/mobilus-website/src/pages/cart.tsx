@@ -21,6 +21,7 @@ export default function CartPage() {
   const [giftCode, setGiftCode] = useState("");
   const [giftApplied, setGiftApplied] = useState(false);
   const [shippingCountry, setShippingCountry] = useState("LV");
+  const [shippingPostal, setShippingPostal] = useState("");
 
   const t = {
     title: lang === "lv" ? "Grozs" : lang === "ru" ? "Корзина" : "Cart",
@@ -153,21 +154,40 @@ export default function CartPage() {
 
             {/* Shipping destination */}
             <div className="mt-6 border border-border p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-4">
                 <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                 <span className="text-xs font-bold uppercase tracking-widest text-foreground">
-                  {lang === "lv" ? "Piegādes valsts" : lang === "ru" ? "Страна доставки" : "Shipping Destination"}
+                  {lang === "lv" ? "Piegādes informācija" : lang === "ru" ? "Информация о доставке" : "Shipping Information"}
                 </span>
               </div>
-              <select
-                value={shippingCountry}
-                onChange={(e) => setShippingCountry(e.target.value)}
-                className="w-full border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:border-primary mb-2"
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                    {lang === "lv" ? "Valsts" : lang === "ru" ? "Страна" : "Country"}
+                  </label>
+                  <select
+                    value={shippingCountry}
+                    onChange={(e) => setShippingCountry(e.target.value)}
+                    className="w-full border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:border-primary"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                    {lang === "lv" ? "Pasta indekss" : lang === "ru" ? "Индекс" : "Postal Code"}
+                  </label>
+                  <input
+                    type="text"
+                    value={shippingPostal}
+                    onChange={(e) => setShippingPostal(e.target.value)}
+                    placeholder={lang === "lv" ? "LV-1234" : lang === "ru" ? "LV-1234" : "LV-1234"}
+                    className="w-full border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
               <p className="text-xs text-emerald-600 font-bold">
                 {lang === "lv" ? "Bezmaksas saņemšana veikalā — Rīgā vai Valmierā" : lang === "ru" ? "Бесплатный самовывоз — Рига или Валмиера" : "Free pickup in-store — Riga or Valmiera"}
               </p>

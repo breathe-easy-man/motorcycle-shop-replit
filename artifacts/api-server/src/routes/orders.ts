@@ -1,9 +1,72 @@
 import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, ordersTable, insertOrderSchema, updateOrderSchema } from "@workspace/db";
+import { db, ordersTable, productsTable, updateOrderSchema } from "@workspace/db";
 import { requireAdmin } from "../middlewares/adminAuth";
 
 const router = Router();
+
+const VALID_PAYMENT_METHODS = new Set(["card", "bank", "cash", "inbank"]);
+const VAT_RATE = 0.21;
+
+interface CreateOrderItem {
+  productId: number;
+  slug: string;
+  name: string;
+  image?: string;
+  quantity: number;
+  sku?: string;
+  colorName?: string;
+}
+
+interface CreateOrderBody {
+  paymentMethod: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  deliveryAddress: Record<string, unknown>;
+  items: CreateOrderItem[];
+  discountCode?: string | null;
+  giftCode?: string | null;
+  notes?: string | null;
+}
+
+function isEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function validateCreateOrder(body: unknown): { data: CreateOrderBody } | { error: string } {
+  const b = body as Record<string, unknown>;
+  if (!b || typeof b !== "object") return { error: "Invalid request body" };
+  if (typeof b["customerName"] !== "string" || !b["customerName"].trim()) return { error: "customerName is required" };
+  if (typeof b["customerEmail"] !== "string" || !isEmail(b["customerEmail"])) return { error: "Valid customerEmail is required" };
+  if (!VALID_PAYMENT_METHODS.has(b["paymentMethod"] as string)) return { error: "Invalid paymentMethod" };
+  if (!Array.isArray(b["items"]) || b["items"].length === 0) return { error: "items must be a non-empty array" };
+  for (const item of b["items"] as unknown[]) {
+    const it = item as Record<string, unknown>;
+    if (!Number.isInteger(it["productId"]) || (it["productId"] as number) <= 0) return { error: "Each item must have a valid productId" };
+    if (!Number.isInteger(it["quantity"]) || (it["quantity"] as number) < 1) return { error: "Each item must have quantity >= 1" };
+  }
+  return {
+    data: {
+      paymentMethod: b["paymentMethod"] as string,
+      customerName: (b["customerName"] as string).trim(),
+      customerEmail: b["customerEmail"] as string,
+      customerPhone: typeof b["customerPhone"] === "string" ? b["customerPhone"] : "",
+      deliveryAddress: (b["deliveryAddress"] as Record<string, unknown>) ?? {},
+      items: (b["items"] as CreateOrderItem[]).map((i) => ({
+        productId: Number(i.productId),
+        slug: String(i.slug ?? ""),
+        name: String(i.name ?? ""),
+        image: String(i.image ?? ""),
+        quantity: Number(i.quantity),
+        sku: String(i.sku ?? ""),
+        colorName: i.colorName ? String(i.colorName) : undefined,
+      })),
+      discountCode: typeof b["discountCode"] === "string" ? b["discountCode"] : null,
+      notes: typeof b["notes"] === "string" ? b["notes"] : null,
+    },
+  };
+}
 
 router.get("/orders", requireAdmin, async (_req, res) => {
   try {
@@ -16,15 +79,58 @@ router.get("/orders", requireAdmin, async (_req, res) => {
 
 router.post("/orders", async (req, res) => {
   try {
-    const parsed = insertOrderSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid data", details: parsed.error.issues });
+    const validated = validateCreateOrder(req.body);
+    if ("error" in validated) {
+      res.status(400).json({ error: validated.error });
       return;
     }
-    const [order] = await db.insert(ordersTable).values(parsed.data).returning();
+    const { items: clientItems, paymentMethod, customerName, customerEmail, customerPhone, deliveryAddress, discountCode, notes } = validated.data;
+
+    const productIds = [...new Set(clientItems.map((i) => i.productId))];
+
+    const allDbProducts: { id: number; price: number }[] = [];
+    for (const pid of productIds) {
+      const [p] = await db
+        .select({ id: productsTable.id, price: productsTable.price })
+        .from(productsTable)
+        .where(eq(productsTable.id, pid));
+      if (p) allDbProducts.push(p);
+    }
+
+    const priceMap = new Map(allDbProducts.map((p) => [p.id, p.price]));
+
+    const enrichedItems = clientItems.map((i) => {
+      const authorativePrice = priceMap.get(i.productId);
+      if (authorativePrice === undefined) {
+        throw new Error(`Product ${i.productId} not found`);
+      }
+      return { ...i, price: authorativePrice };
+    });
+
+    const subtotalExcl = Math.round(
+      enrichedItems.reduce((acc, i) => acc + i.price * i.quantity, 0) / (1 + VAT_RATE)
+    );
+    const vatAmount = Math.round(subtotalExcl * VAT_RATE);
+    const totalAmount = subtotalExcl + vatAmount;
+
+    const [order] = await db.insert(ordersTable).values({
+      status: "pending",
+      paymentMethod,
+      customerName,
+      customerEmail,
+      customerPhone,
+      deliveryAddress,
+      items: enrichedItems,
+      subtotal: subtotalExcl,
+      vat: vatAmount,
+      total: totalAmount,
+      discountCode: discountCode ?? null,
+      notes: notes ?? null,
+    }).returning();
     res.status(201).json(order);
-  } catch {
-    res.status(500).json({ error: "Failed to create order" });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to create order";
+    res.status(500).json({ error: msg });
   }
 });
 
