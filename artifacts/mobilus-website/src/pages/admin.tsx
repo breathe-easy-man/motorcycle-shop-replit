@@ -1815,12 +1815,14 @@ export default function AdminPage() {
                   onClick={async () => {
                     setSavingPartner(true);
                     try {
+                      const sortByOrder = (ps: ApiLeasingPartner[]) =>
+                        [...ps].sort((a, b) => a.displayOrder - b.displayOrder || a.id - b.id);
                       if (editingPartner) {
                         const updated = await api.leasingPartners.update(editingPartner.id, partnerForm, adminKey);
-                        setLeasingPartners(ps => ps.map(p => p.id === updated.id ? updated : p));
+                        setLeasingPartners(ps => sortByOrder(ps.map(p => p.id === updated.id ? updated : p)));
                       } else {
                         const created = await api.leasingPartners.create(partnerForm, adminKey);
-                        setLeasingPartners(ps => [...ps, created]);
+                        setLeasingPartners(ps => sortByOrder([...ps, created]));
                       }
                       setShowPartnerForm(false);
                       setEditingPartner(null);
