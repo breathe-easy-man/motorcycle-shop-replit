@@ -99,13 +99,16 @@ router.post("/orders", async (req, res) => {
 
     const priceMap = new Map(allDbProducts.map((p) => [p.id, p.price]));
 
-    const enrichedItems = clientItems.map((i) => {
-      const authorativePrice = priceMap.get(i.productId);
-      if (authorativePrice === undefined) {
-        throw new Error(`Product ${i.productId} not found`);
-      }
-      return { ...i, price: authorativePrice };
-    });
+    const missingIds = clientItems.filter((i) => !priceMap.has(i.productId)).map((i) => i.productId);
+    if (missingIds.length > 0) {
+      res.status(400).json({ error: `Product(s) not found: ${missingIds.join(", ")}` });
+      return;
+    }
+
+    const enrichedItems = clientItems.map((i) => ({
+      ...i,
+      price: priceMap.get(i.productId)!,
+    }));
 
     const grossTotal = Math.round(enrichedItems.reduce((acc, i) => acc + i.price * i.quantity, 0));
     const subtotalExcl = Math.round(grossTotal / (1 + VAT_RATE));
