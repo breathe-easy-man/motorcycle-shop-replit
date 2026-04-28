@@ -3,11 +3,11 @@
   "dialect": "postgresql",
   "entries": [
     {
-      "idx": 0,
+      "idx": 1,
       "version": "7",
       "when": 1777400862291,
-      "tag": "0000_same_plazm",
-      "breakpoints": true
+      "tag": "0001_add_leasing_partners",
+      "breakpoints": false
     }
   ]
 }

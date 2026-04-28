@@ -29,12 +29,17 @@ router.post("/leasing-partners", requireAdmin, async (req, res) => {
       res.status(400).json({ error: "interestRate must be a non-negative number" });
       return;
     }
+    const order = displayOrder !== undefined ? Number(displayOrder) : 0;
+    if (!Number.isInteger(order)) {
+      res.status(400).json({ error: "displayOrder must be an integer" });
+      return;
+    }
     const [row] = await db.insert(leasingPartnersTable).values({
       name: String(name),
       logoUrl: logoUrl ? String(logoUrl) : null,
       interestRate: String(rate),
       infoText: infoText ? String(infoText) : "",
-      displayOrder: displayOrder !== undefined ? Number(displayOrder) : 0,
+      displayOrder: order,
     }).returning();
     res.status(201).json(row);
   } catch {
@@ -45,6 +50,7 @@ router.post("/leasing-partners", requireAdmin, async (req, res) => {
 async function updatePartner(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) { res.status(400).json({ error: "Invalid id" }); return; }
     const { name, logoUrl, interestRate, infoText, displayOrder } = req.body as Record<string, unknown>;
     const update: Partial<typeof leasingPartnersTable.$inferInsert> = {};
     if (name !== undefined) update.name = String(name);
@@ -58,7 +64,11 @@ async function updatePartner(req: Request, res: Response) {
       update.interestRate = String(rate);
     }
     if (infoText !== undefined) update.infoText = String(infoText);
-    if (displayOrder !== undefined) update.displayOrder = Number(displayOrder);
+    if (displayOrder !== undefined) {
+      const order = Number(displayOrder);
+      if (!Number.isInteger(order)) { res.status(400).json({ error: "displayOrder must be an integer" }); return; }
+      update.displayOrder = order;
+    }
     update.updatedAt = new Date();
     const [row] = await db
       .update(leasingPartnersTable)
@@ -78,6 +88,7 @@ router.patch("/leasing-partners/:id", requireAdmin, updatePartner);
 router.delete("/leasing-partners/:id", requireAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) { res.status(400).json({ error: "Invalid id" }); return; }
     const [deleted] = await db
       .delete(leasingPartnersTable)
       .where(eq(leasingPartnersTable.id, id))
