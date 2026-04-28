@@ -141,8 +141,6 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items: items.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
-            customerEmail: form.email,
             orderId: order.id,
             successUrl: `${base}/checkout/success`,
             cancelUrl: `${base}/checkout/cancel`,

@@ -170,24 +170,38 @@ router.post("/orders/stripe-session", async (req, res) => {
     return;
   }
   try {
+    const body = req.body as { orderId?: number; successUrl?: string; cancelUrl?: string };
+    const orderId = Number(body.orderId);
+    const successUrl = String(body.successUrl ?? "");
+    const cancelUrl = String(body.cancelUrl ?? "");
+
+    if (!orderId || !successUrl || !cancelUrl) {
+      res.status(400).json({ error: "orderId, successUrl, and cancelUrl are required" });
+      return;
+    }
+
+    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
+    if (!order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+    if (order.paymentMethod !== "card") {
+      res.status(400).json({ error: "Order payment method is not card" });
+      return;
+    }
+
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
-    const { items, customerEmail, orderId, successUrl, cancelUrl } = req.body as {
-      items: { name: string; price: number; quantity: number; image?: string }[];
-      customerEmail: string;
-      orderId: number;
-      successUrl: string;
-      cancelUrl: string;
-    };
 
-    const lineItems = items.map((item) => ({
+    const orderItems = order.items as { name: string; price: number; quantity: number; image?: string }[];
+    const lineItems = orderItems.map((item) => ({
       price_data: {
         currency: "eur",
         product_data: {
           name: item.name,
           ...(item.image ? { images: [item.image] } : {}),
         },
-        unit_amount: item.price * 100,
+        unit_amount: Math.round(item.price * 100),
       },
       quantity: item.quantity,
     }));
@@ -196,19 +210,21 @@ router.post("/orders/stripe-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      customer_email: customerEmail,
-      success_url: successUrl + `?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-      cancel_url: cancelUrl + `?order_id=${orderId}`,
-      metadata: { orderId: String(orderId) },
+      customer_email: order.customerEmail,
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+      cancel_url: `${cancelUrl}?order_id=${orderId}`,
+      metadata: {
+        orderId: String(orderId),
+        expectedTotal: String(order.total),
+      },
     });
 
-    if (orderId) {
-      await db.update(ordersTable).set({ stripeSessionId: session.id }).where(eq(ordersTable.id, orderId));
-    }
+    await db.update(ordersTable).set({ stripeSessionId: session.id, updatedAt: new Date() }).where(eq(ordersTable.id, orderId));
 
     res.json({ url: session.url, sessionId: session.id });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to create Stripe session" });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to create Stripe session";
+    res.status(500).json({ error: msg });
   }
 });
 
@@ -253,6 +269,27 @@ router.post("/orders/stripe-webhook", async (req, res) => {
       const session = event.data.object as import("stripe").Stripe.Checkout.Session;
       const orderId = session.metadata?.orderId;
       if (orderId) {
+        const [order] = await db.select({ id: ordersTable.id, total: ordersTable.total, stripeSessionId: ordersTable.stripeSessionId })
+          .from(ordersTable)
+          .where(eq(ordersTable.id, Number(orderId)));
+
+        if (!order) {
+          res.status(404).json({ error: "Order not found for webhook" });
+          return;
+        }
+
+        if (order.stripeSessionId && order.stripeSessionId !== session.id) {
+          res.status(400).json({ error: "Session ID mismatch" });
+          return;
+        }
+
+        const expectedCents = order.total * 100;
+        const paidCents = session.amount_total ?? 0;
+        if (Math.abs(paidCents - expectedCents) > 1) {
+          res.status(400).json({ error: `Amount mismatch: expected ${expectedCents}, got ${paidCents}` });
+          return;
+        }
+
         await db.update(ordersTable).set({ status: "paid", updatedAt: new Date() }).where(eq(ordersTable.id, Number(orderId)));
       }
     }
