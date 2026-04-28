@@ -111,32 +111,46 @@ router.post("/orders/stripe-webhook", async (req, res) => {
   const webhookSecret = process.env["STRIPE_WEBHOOK_SECRET"];
   if (!stripeKey) { res.status(503).json({ error: "Stripe not configured" }); return; }
 
-  try {
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(stripeKey);
-    let event = req.body;
+  const Stripe = (await import("stripe")).default;
+  const stripe = new Stripe(stripeKey);
 
-    if (webhookSecret) {
-      const sig = req.headers["stripe-signature"] as string;
-      try {
-        event = stripe.webhooks.constructEvent(JSON.stringify(req.body), sig, webhookSecret);
-      } catch {
-        res.status(400).json({ error: "Webhook signature verification failed" });
-        return;
-      }
+  const rawBody: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+  const sig = req.headers["stripe-signature"] as string | undefined;
+
+  let event: import("stripe").Stripe.Event;
+
+  if (webhookSecret) {
+    if (!sig) {
+      res.status(400).json({ error: "Missing stripe-signature header" });
+      return;
     }
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    } catch {
+      res.status(400).json({ error: "Webhook signature verification failed" });
+      return;
+    }
+  } else {
+    try {
+      event = JSON.parse(rawBody.toString()) as import("stripe").Stripe.Event;
+    } catch {
+      res.status(400).json({ error: "Invalid JSON body" });
+      return;
+    }
+  }
 
+  try {
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as { metadata?: { orderId?: string }; id: string };
-      const orderId = session?.metadata?.orderId;
+      const session = event.data.object as import("stripe").Stripe.Checkout.Session;
+      const orderId = session.metadata?.orderId;
       if (orderId) {
         await db.update(ordersTable).set({ status: "paid", updatedAt: new Date() }).where(eq(ordersTable.id, Number(orderId)));
       }
     }
-
     res.json({ received: true });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Internal error";
+    res.status(500).json({ error: msg });
   }
 });
 

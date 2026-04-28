@@ -1,10 +1,17 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Trash2, Plus, Minus, ShoppingCart, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
+
+const COUNTRIES = [
+  { code: "LV", name: "Latvia" },
+  { code: "EE", name: "Estonia" },
+  { code: "LT", name: "Lithuania" },
+  { code: "EU", name: "Other EU" },
+];
 
 export default function CartPage() {
   const { items, remove, update, subtotal, vat, total, count } = useCart();
@@ -13,6 +20,7 @@ export default function CartPage() {
   const [discountApplied, setDiscountApplied] = useState(false);
   const [giftCode, setGiftCode] = useState("");
   const [giftApplied, setGiftApplied] = useState(false);
+  const [shippingCountry, setShippingCountry] = useState("LV");
 
   const t = {
     title: lang === "lv" ? "Grozs" : lang === "ru" ? "Корзина" : "Cart",
@@ -141,6 +149,28 @@ export default function CartPage() {
                   </div>
                 </motion.div>
               ))}
+            </div>
+
+            {/* Shipping destination */}
+            <div className="mt-6 border border-border p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-widest text-foreground">
+                  {lang === "lv" ? "Piegādes valsts" : lang === "ru" ? "Страна доставки" : "Shipping Destination"}
+                </span>
+              </div>
+              <select
+                value={shippingCountry}
+                onChange={(e) => setShippingCountry(e.target.value)}
+                className="w-full border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:border-primary mb-2"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-emerald-600 font-bold">
+                {lang === "lv" ? "Bezmaksas saņemšana veikalā — Rīgā vai Valmierā" : lang === "ru" ? "Бесплатный самовывоз — Рига или Валмиера" : "Free pickup in-store — Riga or Valmiera"}
+              </p>
             </div>
 
             <Link href="/moto" className="inline-block mt-6 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">

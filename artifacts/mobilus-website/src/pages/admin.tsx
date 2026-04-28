@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder } from "@/lib/api";
+import type { LucideIcon } from "lucide-react";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -439,7 +440,7 @@ export default function AdminPage() {
                 { key: "reviews" as const, label: "Reviews", icon: Star, badge: pendingReviews },
                 { key: "inquiries" as const, label: "Inquiries", icon: MessageSquare, badge: unreadInquiries },
                 { key: "orders" as const, label: "Orders", icon: ShoppingCart, badge: orders.filter(o => o.status === "pending").length },
-              ] as { key: AdminTab; label: string; icon: any; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
+              ] as { key: AdminTab; label: string; icon: LucideIcon; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
@@ -771,7 +772,7 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {orders.map((order) => {
                   const isExpanded = expandedOrder === order.id;
-                  const addr = order.deliveryAddress as any;
+                  const addr = order.deliveryAddress as ApiDeliveryAddress & { deliveryMethod?: string };
                   const statusColors: Record<string, string> = {
                     pending: "bg-amber-100 text-amber-700 border-amber-300",
                     confirmed: "bg-blue-100 text-blue-700 border-blue-300",
@@ -843,7 +844,7 @@ export default function AdminPage() {
                           <div>
                             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Items</p>
                             <div className="space-y-2">
-                              {(order.items as any[]).map((item: any, idx: number) => (
+                              {(order.items as ApiOrderItem[]).map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-3 text-sm">
                                   {item.image && <img src={item.image} alt={item.name} className="h-10 w-10 object-cover border border-border" referrerPolicy="no-referrer" />}
                                   <div className="flex-1 min-w-0">

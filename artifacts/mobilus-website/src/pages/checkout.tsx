@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, CreditCard, Building2, Banknote, BarChart3, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useI18n } from "@/lib/i18n";
@@ -310,7 +311,7 @@ export default function CheckoutPage() {
                   { key: "bank", icon: Building2, label: lang === "lv" ? "Bankas pārskaitījums" : lang === "ru" ? "Банковский перевод" : "Bank Transfer", sub: "LV12 HABA 0000 0000 0000" },
                   { key: "cash", icon: Banknote, label: lang === "lv" ? "Skaidra nauda veikalā" : lang === "ru" ? "Наличные в магазине" : "Cash at Store", sub: lang === "lv" ? "Apmaksa saņemot preci" : lang === "ru" ? "Оплата при получении" : "Pay on pickup" },
                   { key: "inbank", icon: BarChart3, label: "InBank " + (lang === "lv" ? "līzings" : lang === "ru" ? "лизинг" : "Leasing"), sub: lang === "lv" ? "Ērti ikmēneša maksājumi" : lang === "ru" ? "Удобные ежемесячные платежи" : "Easy monthly payments" },
-                ] as { key: PaymentMethod; icon: any; label: string; sub: string }[]).map(({ key, icon: Icon, label, sub }) => (
+                ] as { key: PaymentMethod; icon: LucideIcon; label: string; sub: string }[]).map(({ key, icon: Icon, label, sub }) => (
                   <label
                     key={key}
                     onClick={() => setPayment(key)}
