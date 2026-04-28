@@ -1,11 +1,12 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, Loader2,
-  Phone, MapPin, Truck, Star, Send, MessageSquare, Tag, ShoppingCart, Plus, Minus, ChevronDown
+  Phone, MapPin, Truck, Star, Send, MessageSquare, Tag, ShoppingCart, Plus, Minus, ChevronDown,
+  X, ZoomIn, ZoomOut
 } from "lucide-react";
 import { useI18n, Lang } from "@/lib/i18n";
 import { api, type ApiAvailability } from "@/lib/api";
@@ -158,6 +159,150 @@ function extractBrand(name: string): string {
 
 type TabKey = "apraksts" | "razotajs" | "specifikacija" | "atsauksmes" | "pieprasijumi";
 
+// ─── ProductLightbox ─────────────────────────────────────────────────────────
+
+interface LightboxProps {
+  images: string[];
+  initialIndex: number;
+  onClose: () => void;
+}
+
+function ProductLightbox({ images, initialIndex, onClose }: LightboxProps) {
+  const [index, setIndex] = useState(initialIndex);
+  const [zoomed, setZoomed] = useState(false);
+  const thumbsRef = useRef<HTMLDivElement>(null);
+
+  const prev = useCallback(() => { setZoomed(false); setIndex((i) => (i - 1 + images.length) % images.length); }, [images.length]);
+  const next = useCallback(() => { setZoomed(false); setIndex((i) => (i + 1) % images.length); }, [images.length]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") prev();
+      else if (e.key === "ArrowRight") next();
+      else if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [prev, next, onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  useEffect(() => {
+    const el = thumbsRef.current?.children[index] as HTMLElement | undefined;
+    el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [index]);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[999] flex flex-col bg-black/90"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClose}
+    >
+      {/* Close button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+        aria-label="Close"
+      >
+        <X className="h-6 w-6" />
+      </button>
+
+      {/* Zoom toggle button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setZoomed((z) => !z); }}
+        className="absolute top-4 right-16 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+        aria-label={zoomed ? "Zoom out" : "Zoom in"}
+      >
+        {zoomed ? <ZoomOut className="h-6 w-6" /> : <ZoomIn className="h-6 w-6" />}
+      </button>
+
+      {/* Main image area — clicks propagate up to the outer div to close */}
+      <div className="relative flex-1 flex items-center justify-center overflow-hidden px-14">
+        {/* Prev arrow */}
+        {images.length > 1 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            className="absolute left-3 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="h-8 w-8" />
+          </button>
+        )}
+
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+          className={`relative z-10 flex items-center justify-center ${zoomed ? "overflow-auto" : "overflow-hidden"}`}
+          style={{ maxHeight: "calc(100vh - 160px)" }}
+          onClick={(e) => { e.stopPropagation(); setZoomed((z) => !z); }}
+        >
+          <img
+            src={images[index]}
+            alt=""
+            referrerPolicy="no-referrer"
+            className={`max-w-full max-h-full object-contain transition-all duration-300 select-none ${
+              zoomed ? "cursor-zoom-out scale-150 origin-center" : "cursor-zoom-in"
+            }`}
+            style={{ maxHeight: "calc(100vh - 160px)" }}
+            draggable={false}
+          />
+        </motion.div>
+
+        {/* Next arrow */}
+        {images.length > 1 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            className="absolute right-3 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+            aria-label="Next"
+          >
+            <ChevronRight className="h-8 w-8" />
+          </button>
+        )}
+      </div>
+
+      {/* Thumbnail strip */}
+      {images.length > 1 && (
+        <div
+          className="relative z-10 pb-4 pt-2 px-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            ref={thumbsRef}
+            className="flex gap-2 overflow-x-auto justify-center"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {images.map((src, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setZoomed(false); setIndex(i); }}
+                className={`flex-shrink-0 w-16 h-16 overflow-hidden border-2 transition-colors ${
+                  i === index ? "border-primary" : "border-white/20 hover:border-white/50"
+                }`}
+              >
+                <img
+                  src={src}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover object-center"
+                  draggable={false}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const [location] = useLocation();
@@ -215,6 +360,10 @@ export default function ProductPage() {
   const [globalDeliveryOptions, setGlobalDeliveryOptions] = useState<import("@/lib/api").ApiDeliveryOption[]>([]);
   const [availabilityOpenStores, setAvailabilityOpenStores] = useState(true);
   const [availabilityOpenDelivery, setAvailabilityOpenDelivery] = useState(false);
+
+  // Lightbox
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -329,6 +478,11 @@ export default function ProductPage() {
 
   const StockIcon = stockStatus.icon;
 
+  // Image array for lightbox
+  const lightboxImages: string[] = hasVariants
+    ? product.variants.map((v) => v.image)
+    : [product.image];
+
   const brand = extractBrand(product.name);
   const staticMfg = MANUFACTURER_MAP[brand] ?? MANUFACTURER_MAP.default;
   const manufacturer: ManufacturerInfo = {
@@ -378,7 +532,16 @@ export default function ProductPage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex flex-col gap-3"
           >
-            <div className="relative overflow-hidden bg-card border border-border aspect-[4/3] group">
+            <div
+              className="relative overflow-hidden bg-card border border-border aspect-[4/3] group cursor-zoom-in"
+              onClick={() => {
+                const idx = hasVariants
+                  ? product.variants.findIndex((v) => v.id === selectedVariant?.id)
+                  : 0;
+                setLightboxIndex(Math.max(0, idx));
+                setLightboxOpen(true);
+              }}
+            >
               {discountPct && (
                 <div className="absolute top-4 left-4 z-10 bg-primary text-white text-sm font-black px-3 py-1.5 uppercase tracking-wider">
                   -{discountPct}%
@@ -396,15 +559,23 @@ export default function ProductPage() {
                 onError={() => setImgError(true)}
                 referrerPolicy="no-referrer"
               />
+              <div className="absolute bottom-3 right-3 z-10 p-1.5 rounded bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                <ZoomIn className="h-4 w-4" />
+              </div>
             </div>
 
             {/* Thumbnail strip — variant images if available, else product image */}
             <div className="grid grid-cols-4 gap-2">
               {hasVariants
-                ? product.variants.slice(0, 3).map((v) => (
+                ? product.variants.slice(0, 3).map((v, i) => (
                     <button
                       key={v.id}
-                      onClick={() => { setSelectedVariant(v); setImgError(false); }}
+                      onClick={() => {
+                        setSelectedVariant(v);
+                        setImgError(false);
+                        setLightboxIndex(i);
+                        setLightboxOpen(true);
+                      }}
                       title={v.colorName}
                       className={`aspect-square overflow-hidden border cursor-pointer transition-colors ${
                         selectedVariant?.id === v.id ? "border-primary" : "border-border hover:border-primary/50"
@@ -422,7 +593,11 @@ export default function ProductPage() {
                 : [product.image, product.image, product.image].map((src, i) => (
                     <button
                       key={i}
-                      onClick={() => setActiveImg(i)}
+                      onClick={() => {
+                        setActiveImg(i);
+                        setLightboxIndex(0);
+                        setLightboxOpen(true);
+                      }}
                       className={`aspect-square overflow-hidden border cursor-pointer transition-colors ${
                         activeImg === i ? "border-primary" : "border-border hover:border-primary/50"
                       }`}
@@ -1369,6 +1544,17 @@ export default function ProductPage() {
           </motion.div>
         )}
       </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <ProductLightbox
+            images={lightboxImages}
+            initialIndex={lightboxIndex}
+            onClose={() => setLightboxOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
