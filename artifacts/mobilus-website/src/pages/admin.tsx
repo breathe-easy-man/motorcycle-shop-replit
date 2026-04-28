@@ -88,8 +88,8 @@ export default function AdminPage() {
   // Product-level stock entries (inside product editor modal) — admin version includes serialNumber
   const [productStockEntries, setProductStockEntries] = useState<ApiAvailabilityEntryAdmin[]>([]);
   const [stockEntryForm, setStockEntryForm] = useState<{
-    locationId: string; deliveryOptionId: string; variantId: string; quantity: number; serialNumber: string;
-  }>({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+    locationId: string; variantId: string; quantity: number; serialNumber: string;
+  }>({ locationId: "", variantId: "", quantity: 1, serialNumber: "" });
   const [savingStockEntry, setSavingStockEntry] = useState(false);
 
   // Availability tab: location editor state
@@ -265,7 +265,7 @@ export default function AdminPage() {
     setFormError("");
     setActiveFormTab("basic");
     setProductStockEntries([]);
-    setStockEntryForm({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+    setStockEntryForm({ locationId: "", variantId: "", quantity: 1, serialNumber: "" });
     loadProductStockEntries(p.id);
     setModal("edit");
   }
@@ -276,7 +276,7 @@ export default function AdminPage() {
     setFormError("");
     setVariantItems([]);
     setProductStockEntries([]);
-    setStockEntryForm({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+    setStockEntryForm({ locationId: "", variantId: "", quantity: 1, serialNumber: "" });
   }
 
   function addVariant() {
@@ -1574,19 +1574,11 @@ export default function AdminPage() {
                     <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Pievienot ierakstu</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-muted-foreground mb-1">Veikals</label>
-                        <select value={stockEntryForm.locationId} onChange={(e) => setStockEntryForm(f => ({ ...f, locationId: e.target.value, deliveryOptionId: "" }))}
+                        <label className="block text-xs text-muted-foreground mb-1">Veikals *</label>
+                        <select value={stockEntryForm.locationId} onChange={(e) => setStockEntryForm(f => ({ ...f, locationId: e.target.value }))}
                           className="w-full bg-background border border-input px-2 py-1 text-xs rounded-none text-foreground h-8">
                           <option value="">— izvēlēties —</option>
                           {locations.filter(l => l.isActive).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-muted-foreground mb-1">Piegāde</label>
-                        <select value={stockEntryForm.deliveryOptionId} onChange={(e) => setStockEntryForm(f => ({ ...f, deliveryOptionId: e.target.value, locationId: "" }))}
-                          className="w-full bg-background border border-input px-2 py-1 text-xs rounded-none text-foreground h-8">
-                          <option value="">— izvēlēties —</option>
-                          {deliveryOptions.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                       </div>
                       <div>
@@ -1607,41 +1599,39 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90 mt-3"
-                      disabled={savingStockEntry || (!stockEntryForm.locationId && !stockEntryForm.deliveryOptionId)}
+                      disabled={savingStockEntry || !stockEntryForm.locationId}
                       onClick={async () => {
                         setSavingStockEntry(true);
                         try {
                           const created = await api.availability.create(editing.id, {
-                            locationId: stockEntryForm.locationId ? Number(stockEntryForm.locationId) : null,
-                            deliveryOptionId: stockEntryForm.deliveryOptionId ? Number(stockEntryForm.deliveryOptionId) : null,
+                            locationId: Number(stockEntryForm.locationId),
                             variantId: stockEntryForm.variantId ? Number(stockEntryForm.variantId) : null,
                             quantity: stockEntryForm.quantity,
                             serialNumber: stockEntryForm.serialNumber || null,
                           }, adminKey);
                           const loc = locations.find(l => l.id === Number(stockEntryForm.locationId));
-                          const del = deliveryOptions.find(d => d.id === Number(stockEntryForm.deliveryOptionId));
                           const variant = variantItems.find(v => v.id === Number(stockEntryForm.variantId));
                           const enriched: ApiAvailabilityEntryAdmin = {
                             id: created.id,
                             productId: created.productId,
                             variantId: created.variantId ?? null,
                             locationId: created.locationId ?? null,
-                            deliveryOptionId: created.deliveryOptionId ?? null,
+                            deliveryOptionId: null,
                             quantity: created.quantity,
                             serialNumber: created.serialNumber ?? null,
                             locationName: loc?.name ?? null,
                             locationAddress: loc?.address ?? null,
                             locationLeadTimeDays: loc?.leadTimeDays ?? null,
                             locationIsActive: loc?.isActive ?? null,
-                            deliveryName: del?.name ?? null,
-                            deliveryPriceMin: del?.priceMin ?? null,
-                            deliveryPriceMax: del?.priceMax ?? null,
-                            deliveryLeadTimeDays: del?.leadTimeDays ?? null,
-                            deliveryIsActive: del?.isActive ?? null,
+                            deliveryName: null,
+                            deliveryPriceMin: null,
+                            deliveryPriceMax: null,
+                            deliveryLeadTimeDays: null,
+                            deliveryIsActive: null,
                             variantColorName: variant?.colorName ?? null,
                           };
                           setProductStockEntries(entries => [...entries, enriched]);
-                          setStockEntryForm({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+                          setStockEntryForm({ locationId: "", variantId: "", quantity: 1, serialNumber: "" });
                         } catch {}
                         setSavingStockEntry(false);
                       }}>

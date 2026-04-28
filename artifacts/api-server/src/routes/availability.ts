@@ -50,9 +50,11 @@ router.get("/products/:id/availability", async (req, res) => {
     // Public response excludes serialNumber
     const entries = rawEntries.map(({ serialNumber: _sn, ...rest }) => rest);
 
+    // Total stock = only location-bound entries (delivery options are not stock buckets)
     const totalStockRow = await db
       .select({ total: sql<number>`coalesce(sum(${productLocationStockTable.quantity}), 0)` })
       .from(productLocationStockTable)
+      .innerJoin(locationsTable, eq(productLocationStockTable.locationId, locationsTable.id))
       .where(eq(productLocationStockTable.productId, productId));
 
     const totalStock = Number(totalStockRow[0]?.total ?? 0);
@@ -72,9 +74,11 @@ router.get("/products/:id/availability/admin", requireAdmin, async (req, res) =>
 
     const entries = await fetchAvailabilityEntries(productId);
 
+    // Total stock = only location-bound entries (delivery options are not stock buckets)
     const totalStockRow = await db
       .select({ total: sql<number>`coalesce(sum(${productLocationStockTable.quantity}), 0)` })
       .from(productLocationStockTable)
+      .leftJoin(locationsTable, eq(productLocationStockTable.locationId, locationsTable.id))
       .where(eq(productLocationStockTable.productId, productId));
 
     const totalStock = Number(totalStockRow[0]?.total ?? 0);
@@ -91,10 +95,10 @@ router.post("/products/:id/availability", requireAdmin, async (req, res) => {
     const [product] = await db.select({ id: productsTable.id }).from(productsTable).where(eq(productsTable.id, productId));
     if (!product) { res.status(404).json({ error: "Product not found" }); return; }
 
-    const { variantId, locationId, deliveryOptionId, quantity, serialNumber } = req.body as Record<string, unknown>;
+    const { variantId, locationId, quantity, serialNumber } = req.body as Record<string, unknown>;
 
-    if (locationId === undefined && deliveryOptionId === undefined) {
-      res.status(400).json({ error: "Either locationId or deliveryOptionId is required" });
+    if (!locationId || typeof locationId !== "number") {
+      res.status(400).json({ error: "locationId is required and must be a number" });
       return;
     }
     if (typeof quantity !== "number" || quantity < 0) {
@@ -102,11 +106,29 @@ router.post("/products/:id/availability", requireAdmin, async (req, res) => {
       return;
     }
 
+    // Verify location exists
+    const [location] = await db.select({ id: locationsTable.id }).from(locationsTable).where(eq(locationsTable.id, Number(locationId)));
+    if (!location) {
+      res.status(400).json({ error: "Location not found" });
+      return;
+    }
+
+    // If variantId provided, verify it belongs to this product
+    if (variantId != null) {
+      const [variant] = await db.select({ id: productVariantsTable.id })
+        .from(productVariantsTable)
+        .where(eq(productVariantsTable.id, Number(variantId)));
+      if (!variant) {
+        res.status(400).json({ error: "Variant not found" });
+        return;
+      }
+    }
+
     const [entry] = await db.insert(productLocationStockTable).values({
       productId,
       variantId: variantId != null ? Number(variantId) : null,
-      locationId: locationId != null ? Number(locationId) : null,
-      deliveryOptionId: deliveryOptionId != null ? Number(deliveryOptionId) : null,
+      locationId: Number(locationId),
+      deliveryOptionId: null,
       quantity: Number(quantity),
       serialNumber: serialNumber ? String(serialNumber) : null,
     }).returning();

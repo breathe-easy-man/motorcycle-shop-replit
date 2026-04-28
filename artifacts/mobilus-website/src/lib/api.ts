@@ -328,7 +328,7 @@ export const api = {
       }),
     create: (
       productId: number,
-      data: { variantId?: number | null; locationId?: number | null; deliveryOptionId?: number | null; quantity: number; serialNumber?: string | null },
+      data: { variantId?: number | null; locationId: number; quantity: number; serialNumber?: string | null },
       key: string
     ) =>
       request<ApiAvailabilityEntryAdmin>(`/products/${productId}/availability`, {

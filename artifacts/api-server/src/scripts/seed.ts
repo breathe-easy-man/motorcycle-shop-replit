@@ -309,7 +309,7 @@ async function seed() {
   if (existingLocs.length === 0) {
     await db.insert(locationsTable).values({
       name: "Mobilus Rīga",
-      address: "Dārzciema iela 123, Rīga",
+      address: "Rīga, Dārzciema 123",
       workHours: "P-Pk 9:00-18:00, S 10:00-15:00",
       contacts: { phone: "+371 20 000 000", email: "info@mobilus.lv" },
       leadTimeDays: 1,
