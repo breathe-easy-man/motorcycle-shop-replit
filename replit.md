@@ -43,6 +43,10 @@ Light theme inspired by K-moto (kmoto.lv):
 - DB push: `cd lib/db && pnpm run push`
 - Product routes: `/moto/:slug`, `/velo/:slug`, `/skates/:slug`, `/winter/:slug`
 - Admin route: `/admin` (requires key stored in localStorage)
-- DB tables: `products`, `product_variants`, `reviews`, `inquiries`
+- DB tables: `products`, `product_variants`, `reviews`, `inquiries`, `locations`, `delivery_options`, `product_location_stock`
 - Review moderation: admin must approve before showing on product page
 - Inquiry tracking: read/unread flag, admin can delete
+- Availability system: per-product stock entries per location/delivery option; product page shows live totalStock + collapsible Pieejams veikalā / Piegāde accordions with estimated dates
+- Seed script: `cd artifacts/api-server && pnpm exec tsx src/scripts/seed-locations.ts`
+- Admin "Pieejamība" tab: manage store locations + delivery options CRUD
+- Admin product editor "Stock" tab: add/remove per-product stock entries (edit mode only)

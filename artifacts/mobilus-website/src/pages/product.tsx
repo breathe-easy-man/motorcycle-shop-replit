@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, Loader2,
-  Phone, MapPin, Truck, Star, Send, MessageSquare, Tag, ShoppingCart, Plus, Minus
+  Phone, MapPin, Truck, Star, Send, MessageSquare, Tag, ShoppingCart, Plus, Minus, ChevronDown
 } from "lucide-react";
 import { useI18n, Lang } from "@/lib/i18n";
-import { api } from "@/lib/api";
+import { api, type ApiAvailability } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 
 interface Spec {
@@ -210,6 +210,11 @@ export default function ProductPage() {
   // Variant selection
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
+  // Availability
+  const [availability, setAvailability] = useState<ApiAvailability | null>(null);
+  const [availabilityOpenStores, setAvailabilityOpenStores] = useState(true);
+  const [availabilityOpenDelivery, setAvailabilityOpenDelivery] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     setImgError(false);
@@ -222,6 +227,10 @@ export default function ProductPage() {
         if (Array.isArray(data.variants) && data.variants.length > 0) {
           setSelectedVariant(data.variants[0]);
         }
+        fetch(`/api/products/${data.id}/availability`)
+          .then((r) => r.json())
+          .then((avail) => setAvailability(avail))
+          .catch(() => {});
         return fetch("/api/products");
       })
       .then((r) => r.json())
@@ -299,7 +308,11 @@ export default function ProductPage() {
   const moLabel = lang === "lv" ? "mēn" : lang === "ru" ? "мес" : "mo";
   const moLabelDot = lang === "lv" ? "mēn." : lang === "ru" ? "мес." : "mo.";
 
-  const displayStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const displayStock = availability
+    ? availability.totalStock
+    : selectedVariant
+      ? selectedVariant.stock
+      : product.stock;
   const stockStatus =
     displayStock === 0
       ? { label: lang === "lv" ? "Nav noliktavā" : lang === "ru" ? "Нет в наличии" : "Out of Stock", color: "text-red-500", icon: AlertCircle }
@@ -664,46 +677,99 @@ export default function ProductPage() {
             </div>
 
             {/* Availability */}
-            <div className="border border-border bg-card p-4 mb-4">
-              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">
-                {lang === "lv" ? "Pieejamība" : lang === "ru" ? "Наличие" : "Availability"}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                  <div>
-                    <span className="text-foreground font-bold">
-                      {lang === "lv" ? "Rīgā" : lang === "ru" ? "Рига" : "Riga"}
-                    </span>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {lang === "lv" ? "Saņem veikalā — bez maksas" : lang === "ru" ? "Самовывоз — бесплатно" : "Pick up in store — free"}
-                    </span>
-                  </div>
+            {availability && (availability.entries.length > 0) && (() => {
+              const storeEntries = availability.entries.filter(e => e.locationName);
+              const deliveryEntries = availability.entries.filter(e => e.deliveryName);
+              const today = new Date();
+              return (
+                <div className="border border-border bg-card mb-4 overflow-hidden">
+                  {/* Stores accordion */}
+                  {storeEntries.length > 0 && (
+                    <div>
+                      <button
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                        onClick={() => setAvailabilityOpenStores(s => !s)}
+                      >
+                        <span className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5 text-primary" />
+                          {lang === "lv" ? "Pieejams veikalā" : lang === "ru" ? "Наличие в магазине" : "In-Store Pickup"}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${availabilityOpenStores ? "rotate-180" : ""}`} />
+                      </button>
+                      {availabilityOpenStores && (
+                        <div className="border-t border-border px-4 pb-3 pt-2 space-y-2">
+                          {storeEntries.map((e) => {
+                            const leadDays = e.locationLeadTimeDays ?? 0;
+                            const est = new Date(today);
+                            est.setDate(est.getDate() + leadDays);
+                            const estStr = leadDays === 0
+                              ? (lang === "lv" ? "Šodien" : lang === "ru" ? "Сегодня" : "Today")
+                              : est.toLocaleDateString(lang === "lv" ? "lv-LV" : lang === "ru" ? "ru-RU" : "en-GB", { day: "2-digit", month: "2-digit" });
+                            return (
+                              <div key={e.id} className="flex items-start justify-between gap-2 text-sm">
+                                <div>
+                                  <span className="font-bold text-foreground">{e.locationName}</span>
+                                  {e.locationAddress && <p className="text-xs text-muted-foreground mt-0.5">{e.locationAddress}</p>}
+                                  {e.variantColorName && <p className="text-xs text-primary mt-0.5">{e.variantColorName}</p>}
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <span className={`text-xs font-bold ${e.quantity > 0 ? "text-emerald-500" : "text-orange-400"}`}>
+                                    {e.quantity > 0 ? (lang === "lv" ? `${e.quantity} gab.` : lang === "ru" ? `${e.quantity} шт.` : `${e.quantity} pcs`) : (lang === "lv" ? "Nav" : lang === "ru" ? "Нет" : "Out")}
+                                  </span>
+                                  {e.quantity > 0 && <p className="text-xs text-muted-foreground">{estStr}</p>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Delivery accordion */}
+                  {deliveryEntries.length > 0 && (
+                    <div className={storeEntries.length > 0 ? "border-t border-border" : ""}>
+                      <button
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                        onClick={() => setAvailabilityOpenDelivery(s => !s)}
+                      >
+                        <span className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                          <Truck className="h-3.5 w-3.5 text-primary" />
+                          {lang === "lv" ? "Piegāde" : lang === "ru" ? "Доставка" : "Delivery"}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${availabilityOpenDelivery ? "rotate-180" : ""}`} />
+                      </button>
+                      {availabilityOpenDelivery && (
+                        <div className="border-t border-border px-4 pb-3 pt-2 space-y-2">
+                          {deliveryEntries.map((e) => {
+                            const leadDays = e.deliveryLeadTimeDays ?? 3;
+                            const est = new Date(today);
+                            est.setDate(est.getDate() + leadDays);
+                            const estStr = est.toLocaleDateString(lang === "lv" ? "lv-LV" : lang === "ru" ? "ru-RU" : "en-GB", { day: "2-digit", month: "2-digit" });
+                            const priceStr = e.deliveryPriceMin === 0 && e.deliveryPriceMax === 0
+                              ? (lang === "lv" ? "Bezmaksas" : lang === "ru" ? "Бесплатно" : "Free")
+                              : e.deliveryPriceMin === e.deliveryPriceMax
+                                ? `€${e.deliveryPriceMin}`
+                                : `€${e.deliveryPriceMin}–€${e.deliveryPriceMax}`;
+                            return (
+                              <div key={e.id} className="flex items-start justify-between gap-2 text-sm">
+                                <div>
+                                  <span className="font-bold text-foreground">{e.deliveryName}</span>
+                                  {e.variantColorName && <p className="text-xs text-primary mt-0.5">{e.variantColorName}</p>}
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <span className="text-xs font-bold text-foreground">{priceStr}</span>
+                                  <p className="text-xs text-muted-foreground">{lang === "lv" ? "Līdz" : lang === "ru" ? "До" : "By"} {estStr}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                  <div>
-                    <span className="text-foreground font-bold">
-                      {lang === "lv" ? "Valmierā" : lang === "ru" ? "Валмиера" : "Valmiera"}
-                    </span>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {lang === "lv" ? "Saņem veikalā — bez maksas" : lang === "ru" ? "Самовывоз — бесплатно" : "Pick up in store — free"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-sm border-t border-border pt-2 mt-2">
-                  <Truck className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                  <div>
-                    <span className="text-foreground font-bold">
-                      {lang === "lv" ? "Piegāde uz adresi" : lang === "ru" ? "Доставка на адрес" : "Home Delivery"}
-                    </span>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {lang === "lv" ? "€19–30 (termiņus noskaidrot)" : lang === "ru" ? "€19–30 (уточнить сроки)" : "€19–30 (inquire for dates)"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Trust line */}
             <div className="flex items-center gap-6 text-xs text-muted-foreground border-t border-border pt-4">

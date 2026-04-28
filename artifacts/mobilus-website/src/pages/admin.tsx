@@ -1,20 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
-import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress } from "@/lib/api";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Pencil, Trash2, LogOut, Save, X, Package,
   ChevronUp, ChevronDown, Search, Star, MessageSquare,
-  CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette, ShoppingCart
+  CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette, ShoppingCart,
+  MapPin, Truck, Building2
 } from "lucide-react";
 
 const STORAGE_KEY = "mobilus_admin_key";
 const CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV", "Velo", "Skrituļslidas", "Slēpes", "Snoubords"];
 
 type FormState = Omit<ApiProductInput, "variants">;
-type AdminTab = "products" | "reviews" | "inquiries" | "orders";
+type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability";
 
 type VariantFormItem = {
   id?: number;
@@ -77,7 +78,31 @@ export default function AdminPage() {
   const [variantItems, setVariantItems] = useState<VariantFormItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-  const [activeFormTab, setActiveFormTab] = useState<"basic" | "desc" | "specs" | "manufacturer" | "variants">("basic");
+  const [activeFormTab, setActiveFormTab] = useState<"basic" | "desc" | "specs" | "manufacturer" | "variants" | "availability">("basic");
+
+  // Availability (locations/delivery/stock) state
+  const [locations, setLocations] = useState<ApiLocation[]>([]);
+  const [deliveryOptions, setDeliveryOptions] = useState<ApiDeliveryOption[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  // Product-level stock entries (inside product editor modal)
+  const [productStockEntries, setProductStockEntries] = useState<ApiAvailabilityEntry[]>([]);
+  const [stockEntryForm, setStockEntryForm] = useState<{
+    locationId: string; deliveryOptionId: string; variantId: string; quantity: number; serialNumber: string;
+  }>({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+  const [savingStockEntry, setSavingStockEntry] = useState(false);
+
+  // Availability tab: location editor state
+  const [editingLocation, setEditingLocation] = useState<ApiLocation | null>(null);
+  const [locationForm, setLocationForm] = useState({ name: "", address: "", workHours: "", phone: "", email: "", leadTimeDays: 1, isActive: true });
+  const [showLocationForm, setShowLocationForm] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
+
+  // Availability tab: delivery option editor state
+  const [editingDelivery, setEditingDelivery] = useState<ApiDeliveryOption | null>(null);
+  const [deliveryForm, setDeliveryForm] = useState({ name: "", priceMin: 0, priceMax: 0, leadTimeDays: 3, isActive: true });
+  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
+  const [savingDelivery, setSavingDelivery] = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState<ApiProduct | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -141,14 +166,42 @@ export default function AdminPage() {
     }
   }, [adminKey]);
 
+  const loadLocations = useCallback(async () => {
+    try {
+      const data = await api.locations.list();
+      setLocations(data);
+    } catch {}
+  }, []);
+
+  const loadDeliveryOptions = useCallback(async () => {
+    try {
+      const data = await api.deliveryOptions.list();
+      setDeliveryOptions(data);
+    } catch {}
+  }, []);
+
+  const loadProductStockEntries = useCallback(async (productId: number) => {
+    setLoadingAvailability(true);
+    try {
+      const data = await api.availability.getByProduct(productId);
+      setProductStockEntries(data.entries);
+    } catch {
+      setProductStockEntries([]);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (authed) {
       loadProducts();
       loadReviews();
       loadInquiries();
       loadOrders();
+      loadLocations();
+      loadDeliveryOptions();
     }
-  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders]);
+  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions]);
 
   async function handleLogin() {
     setAuthError("");
@@ -211,10 +264,20 @@ export default function AdminPage() {
     setEditing(p);
     setFormError("");
     setActiveFormTab("basic");
+    setProductStockEntries([]);
+    setStockEntryForm({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+    loadProductStockEntries(p.id);
     setModal("edit");
   }
 
-  function closeModal() { setModal(null); setEditing(null); setFormError(""); setVariantItems([]); }
+  function closeModal() {
+    setModal(null);
+    setEditing(null);
+    setFormError("");
+    setVariantItems([]);
+    setProductStockEntries([]);
+    setStockEntryForm({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+  }
 
   function addVariant() {
     setVariantItems((v) => [...v, { colorName: "", colorHex: "", image: "", stock: 0 }]);
@@ -440,6 +503,7 @@ export default function AdminPage() {
                 { key: "reviews" as const, label: "Reviews", icon: Star, badge: pendingReviews },
                 { key: "inquiries" as const, label: "Inquiries", icon: MessageSquare, badge: unreadInquiries },
                 { key: "orders" as const, label: "Orders", icon: ShoppingCart, badge: orders.filter(o => o.status === "pending").length },
+                { key: "availability" as const, label: "Pieejamība", icon: MapPin, badge: 0 },
               ] as { key: AdminTab; label: string; icon: LucideIcon; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
                 <button
                   key={key}
@@ -882,6 +946,248 @@ export default function AdminPage() {
             )}
           </>
         )}
+
+        {/* ===== AVAILABILITY TAB ===== */}
+        {activeTab === "availability" && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tighter">Pieejamība</h1>
+                <p className="text-muted-foreground text-sm">{locations.length} veikali · {deliveryOptions.length} piegādes iespējas</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* ---- VEIKALI ---- */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-black uppercase tracking-tighter text-lg flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" /> Veikali
+                  </h2>
+                  <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90"
+                    onClick={() => {
+                      setEditingLocation(null);
+                      setLocationForm({ name: "", address: "", workHours: "", phone: "", email: "", leadTimeDays: 1, isActive: true });
+                      setShowLocationForm(true);
+                    }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Pievienot
+                  </Button>
+                </div>
+
+                {showLocationForm && (
+                  <div className="border border-primary/40 bg-primary/5 p-4 mb-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
+                      {editingLocation ? "Rediģēt veikalu" : "Jauns veikals"}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-xs text-muted-foreground mb-1">Nosaukums *</label>
+                        <Input value={locationForm.name} onChange={(e) => setLocationForm(f => ({ ...f, name: e.target.value }))} className="rounded-none text-sm h-8" placeholder="Mobilus Rīga" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs text-muted-foreground mb-1">Adrese *</label>
+                        <Input value={locationForm.address} onChange={(e) => setLocationForm(f => ({ ...f, address: e.target.value }))} className="rounded-none text-sm h-8" placeholder="Dārzciema iela 123, Rīga" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Darba laiks</label>
+                        <Input value={locationForm.workHours} onChange={(e) => setLocationForm(f => ({ ...f, workHours: e.target.value }))} className="rounded-none text-sm h-8" placeholder="P-Pk 9-18" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Lead time (dienas)</label>
+                        <Input type="number" min={0} value={locationForm.leadTimeDays} onChange={(e) => setLocationForm(f => ({ ...f, leadTimeDays: Number(e.target.value) }))} className="rounded-none text-sm h-8" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Tālrunis</label>
+                        <Input value={locationForm.phone} onChange={(e) => setLocationForm(f => ({ ...f, phone: e.target.value }))} className="rounded-none text-sm h-8" placeholder="+371 20 000 000" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">E-pasts</label>
+                        <Input value={locationForm.email} onChange={(e) => setLocationForm(f => ({ ...f, email: e.target.value }))} className="rounded-none text-sm h-8" placeholder="info@mobilus.lv" />
+                      </div>
+                      <div className="col-span-2 flex items-center gap-2">
+                        <input type="checkbox" id="loc-active" checked={locationForm.isActive} onChange={(e) => setLocationForm(f => ({ ...f, isActive: e.target.checked }))} className="h-4 w-4 accent-primary" />
+                        <label htmlFor="loc-active" className="text-sm text-foreground cursor-pointer">Aktīvs</label>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90"
+                        disabled={savingLocation}
+                        onClick={async () => {
+                          if (!locationForm.name || !locationForm.address) return;
+                          setSavingLocation(true);
+                          try {
+                            const data = { name: locationForm.name, address: locationForm.address, workHours: locationForm.workHours, contacts: { phone: locationForm.phone, email: locationForm.email }, leadTimeDays: locationForm.leadTimeDays, isActive: locationForm.isActive };
+                            if (editingLocation) {
+                              const updated = await api.locations.update(editingLocation.id, data, adminKey);
+                              setLocations(ls => ls.map(l => l.id === updated.id ? updated : l));
+                            } else {
+                              const created = await api.locations.create(data, adminKey);
+                              setLocations(ls => [...ls, created]);
+                            }
+                            setShowLocationForm(false);
+                            setEditingLocation(null);
+                          } catch {}
+                          setSavingLocation(false);
+                        }}>
+                        <Save className="h-3.5 w-3.5 mr-1" /> {savingLocation ? "..." : "Saglabāt"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setShowLocationForm(false); setEditingLocation(null); }}>Atcelt</Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {locations.length === 0 && <p className="text-muted-foreground text-sm py-4">Nav veikalu.</p>}
+                  {locations.map((loc) => (
+                    <div key={loc.id} className={`border p-4 ${loc.isActive ? "border-border bg-card" : "border-border/50 bg-muted/20 opacity-60"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-sm text-foreground">{loc.name}</span>
+                            {!loc.isActive && <Badge className="text-xs rounded-none border-border text-muted-foreground">Neaktīvs</Badge>}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                            <span>{loc.address}</span>
+                          </div>
+                          {loc.workHours && <p className="text-xs text-muted-foreground mt-0.5">{loc.workHours}</p>}
+                          {(loc.contacts.phone || loc.contacts.email) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{loc.contacts.phone}{loc.contacts.phone && loc.contacts.email ? " · " : ""}{loc.contacts.email}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-0.5">Lead time: {loc.leadTimeDays} d.</p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              setEditingLocation(loc);
+                              setLocationForm({ name: loc.name, address: loc.address, workHours: loc.workHours, phone: loc.contacts.phone ?? "", email: loc.contacts.email ?? "", leadTimeDays: loc.leadTimeDays, isActive: loc.isActive });
+                              setShowLocationForm(true);
+                            }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                            onClick={async () => {
+                              if (!confirm(`Dzēst "${loc.name}"?`)) return;
+                              try { await api.locations.delete(loc.id, adminKey); setLocations(ls => ls.filter(l => l.id !== loc.id)); } catch {}
+                            }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ---- PIEGĀDES IESPĒJAS ---- */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-black uppercase tracking-tighter text-lg flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-primary" /> Piegādes iespējas
+                  </h2>
+                  <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90"
+                    onClick={() => {
+                      setEditingDelivery(null);
+                      setDeliveryForm({ name: "", priceMin: 0, priceMax: 0, leadTimeDays: 3, isActive: true });
+                      setShowDeliveryForm(true);
+                    }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Pievienot
+                  </Button>
+                </div>
+
+                {showDeliveryForm && (
+                  <div className="border border-primary/40 bg-primary/5 p-4 mb-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
+                      {editingDelivery ? "Rediģēt piegādi" : "Jauna piegāde"}
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <label className="block text-xs text-muted-foreground mb-1">Nosaukums *</label>
+                        <Input value={deliveryForm.name} onChange={(e) => setDeliveryForm(f => ({ ...f, name: e.target.value }))} className="rounded-none text-sm h-8" placeholder="Piegāde uz adresi" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Cena no (€)</label>
+                        <Input type="number" min={0} value={deliveryForm.priceMin} onChange={(e) => setDeliveryForm(f => ({ ...f, priceMin: Number(e.target.value) }))} className="rounded-none text-sm h-8" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Cena līdz (€)</label>
+                        <Input type="number" min={0} value={deliveryForm.priceMax} onChange={(e) => setDeliveryForm(f => ({ ...f, priceMax: Number(e.target.value) }))} className="rounded-none text-sm h-8" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Lead time (dienas)</label>
+                        <Input type="number" min={0} value={deliveryForm.leadTimeDays} onChange={(e) => setDeliveryForm(f => ({ ...f, leadTimeDays: Number(e.target.value) }))} className="rounded-none text-sm h-8" />
+                      </div>
+                      <div className="flex items-center gap-2 self-end pb-1">
+                        <input type="checkbox" id="del-active" checked={deliveryForm.isActive} onChange={(e) => setDeliveryForm(f => ({ ...f, isActive: e.target.checked }))} className="h-4 w-4 accent-primary" />
+                        <label htmlFor="del-active" className="text-sm text-foreground cursor-pointer">Aktīvs</label>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90"
+                        disabled={savingDelivery}
+                        onClick={async () => {
+                          if (!deliveryForm.name) return;
+                          setSavingDelivery(true);
+                          try {
+                            const data = { name: deliveryForm.name, priceMin: deliveryForm.priceMin, priceMax: deliveryForm.priceMax, leadTimeDays: deliveryForm.leadTimeDays, isActive: deliveryForm.isActive };
+                            if (editingDelivery) {
+                              const updated = await api.deliveryOptions.update(editingDelivery.id, data, adminKey);
+                              setDeliveryOptions(ds => ds.map(d => d.id === updated.id ? updated : d));
+                            } else {
+                              const created = await api.deliveryOptions.create(data, adminKey);
+                              setDeliveryOptions(ds => [...ds, created]);
+                            }
+                            setShowDeliveryForm(false);
+                            setEditingDelivery(null);
+                          } catch {}
+                          setSavingDelivery(false);
+                        }}>
+                        <Save className="h-3.5 w-3.5 mr-1" /> {savingDelivery ? "..." : "Saglabāt"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setShowDeliveryForm(false); setEditingDelivery(null); }}>Atcelt</Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {deliveryOptions.length === 0 && <p className="text-muted-foreground text-sm py-4">Nav piegādes iespēju.</p>}
+                  {deliveryOptions.map((d) => (
+                    <div key={d.id} className={`border p-4 ${d.isActive ? "border-border bg-card" : "border-border/50 bg-muted/20 opacity-60"}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-sm text-foreground">{d.name}</span>
+                            {!d.isActive && <Badge className="text-xs rounded-none border-border text-muted-foreground">Neaktīvs</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            €{d.priceMin}–€{d.priceMax} · {d.leadTimeDays} d.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              setEditingDelivery(d);
+                              setDeliveryForm({ name: d.name, priceMin: d.priceMin, priceMax: d.priceMax, leadTimeDays: d.leadTimeDays, isActive: d.isActive });
+                              setShowDeliveryForm(true);
+                            }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                            onClick={async () => {
+                              if (!confirm(`Dzēst "${d.name}"?`)) return;
+                              try { await api.deliveryOptions.delete(d.id, adminKey); setDeliveryOptions(ds => ds.filter(x => x.id !== d.id)); } catch {}
+                            }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* ===== PRODUCT EDIT/ADD MODAL ===== */}
@@ -905,6 +1211,7 @@ export default function AdminPage() {
                 { key: "specs" as const, label: `Specs (${form.specs.length})` },
                 { key: "variants" as const, label: `Colors (${variantItems.length})` },
                 { key: "manufacturer" as const, label: "Manufacturer" },
+                ...(modal === "edit" ? [{ key: "availability" as const, label: `Stock (${productStockEntries.length})` }] : []),
               ]).map(({ key, label }) => (
                 <button key={key} onClick={() => setActiveFormTab(key)}
                   className={`flex-shrink-0 px-5 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
@@ -1201,6 +1508,140 @@ export default function AdminPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Availability / Stock entries (edit mode only) */}
+              {activeFormTab === "availability" && modal === "edit" && editing && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Pievienojiet noliktavas ierakstus šim produktam. Katra rinda norāda daudzumu konkrētā veikalā vai piegādes iespējā.
+                  </p>
+
+                  {/* Existing entries */}
+                  {loadingAvailability ? (
+                    <p className="text-muted-foreground text-sm py-4">Ielādē...</p>
+                  ) : productStockEntries.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-border mb-4">
+                      <Package className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">Nav noliktavas ierakstu.</p>
+                    </div>
+                  ) : (
+                    <div className="border border-border mb-4 overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted/50 border-b border-border">
+                          <tr>
+                            <th className="text-left px-3 py-2 font-bold">Veikals / Piegāde</th>
+                            <th className="text-left px-3 py-2 font-bold">Krāsa</th>
+                            <th className="text-left px-3 py-2 font-bold">Daudzums</th>
+                            <th className="text-left px-3 py-2 font-bold">Sērijas nr.</th>
+                            <th className="text-right px-3 py-2"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {productStockEntries.map((e) => (
+                            <tr key={e.id} className="border-b border-border/50">
+                              <td className="px-3 py-2 text-foreground">
+                                {e.locationName ? (
+                                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-primary flex-shrink-0" />{e.locationName}</span>
+                                ) : e.deliveryName ? (
+                                  <span className="flex items-center gap-1"><Truck className="h-3 w-3 text-primary flex-shrink-0" />{e.deliveryName}</span>
+                                ) : "—"}
+                              </td>
+                              <td className="px-3 py-2 text-muted-foreground">{e.variantColorName ?? "Base"}</td>
+                              <td className="px-3 py-2 font-bold text-foreground">{e.quantity}</td>
+                              <td className="px-3 py-2 text-muted-foreground font-mono">{e.serialNumber ?? "—"}</td>
+                              <td className="px-3 py-2 text-right">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400"
+                                  onClick={async () => {
+                                    try {
+                                      await api.availability.delete(e.id, adminKey);
+                                      setProductStockEntries(entries => entries.filter(x => x.id !== e.id));
+                                    } catch {}
+                                  }}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Add entry form */}
+                  <div className="border border-primary/30 bg-primary/5 p-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Pievienot ierakstu</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Veikals</label>
+                        <select value={stockEntryForm.locationId} onChange={(e) => setStockEntryForm(f => ({ ...f, locationId: e.target.value, deliveryOptionId: "" }))}
+                          className="w-full bg-background border border-input px-2 py-1 text-xs rounded-none text-foreground h-8">
+                          <option value="">— izvēlēties —</option>
+                          {locations.filter(l => l.isActive).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Piegāde</label>
+                        <select value={stockEntryForm.deliveryOptionId} onChange={(e) => setStockEntryForm(f => ({ ...f, deliveryOptionId: e.target.value, locationId: "" }))}
+                          className="w-full bg-background border border-input px-2 py-1 text-xs rounded-none text-foreground h-8">
+                          <option value="">— izvēlēties —</option>
+                          {deliveryOptions.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Krāsas variants</label>
+                        <select value={stockEntryForm.variantId} onChange={(e) => setStockEntryForm(f => ({ ...f, variantId: e.target.value }))}
+                          className="w-full bg-background border border-input px-2 py-1 text-xs rounded-none text-foreground h-8">
+                          <option value="">Base (bez variantu)</option>
+                          {variantItems.filter(v => v.id).map(v => <option key={v.id} value={v.id}>{v.colorName}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Daudzums *</label>
+                        <Input type="number" min={0} value={stockEntryForm.quantity} onChange={(e) => setStockEntryForm(f => ({ ...f, quantity: Number(e.target.value) }))} className="rounded-none text-xs h-8" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs text-muted-foreground mb-1">Sērijas numurs (neobligāts)</label>
+                        <Input value={stockEntryForm.serialNumber} onChange={(e) => setStockEntryForm(f => ({ ...f, serialNumber: e.target.value }))} className="rounded-none text-xs h-8 font-mono" placeholder="SN12345" />
+                      </div>
+                    </div>
+                    <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90 mt-3"
+                      disabled={savingStockEntry || (!stockEntryForm.locationId && !stockEntryForm.deliveryOptionId)}
+                      onClick={async () => {
+                        setSavingStockEntry(true);
+                        try {
+                          const created = await api.availability.create(editing.id, {
+                            locationId: stockEntryForm.locationId ? Number(stockEntryForm.locationId) : null,
+                            deliveryOptionId: stockEntryForm.deliveryOptionId ? Number(stockEntryForm.deliveryOptionId) : null,
+                            variantId: stockEntryForm.variantId ? Number(stockEntryForm.variantId) : null,
+                            quantity: stockEntryForm.quantity,
+                            serialNumber: stockEntryForm.serialNumber || null,
+                          }, adminKey);
+                          const loc = locations.find(l => l.id === Number(stockEntryForm.locationId));
+                          const del = deliveryOptions.find(d => d.id === Number(stockEntryForm.deliveryOptionId));
+                          const variant = variantItems.find(v => v.id === Number(stockEntryForm.variantId));
+                          const enriched: ApiAvailabilityEntry = {
+                            ...created,
+                            locationName: loc?.name ?? null,
+                            locationAddress: loc?.address ?? null,
+                            locationLeadTimeDays: loc?.leadTimeDays ?? null,
+                            locationIsActive: loc?.isActive ?? null,
+                            deliveryName: del?.name ?? null,
+                            deliveryPriceMin: del?.priceMin ?? null,
+                            deliveryPriceMax: del?.priceMax ?? null,
+                            deliveryLeadTimeDays: del?.leadTimeDays ?? null,
+                            deliveryIsActive: del?.isActive ?? null,
+                            variantColorName: variant?.colorName ?? null,
+                          };
+                          setProductStockEntries(entries => [...entries, enriched]);
+                          setStockEntryForm({ locationId: "", deliveryOptionId: "", variantId: "", quantity: 1, serialNumber: "" });
+                        } catch {}
+                        setSavingStockEntry(false);
+                      }}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> {savingStockEntry ? "..." : "Pievienot"}
+                    </Button>
+                  </div>
                 </div>
               )}
 

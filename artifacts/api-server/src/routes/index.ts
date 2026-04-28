@@ -4,6 +4,8 @@ import productsRouter from "./products";
 import reviewsRouter from "./reviews";
 import inquiriesRouter from "./inquiries";
 import ordersRouter from "./orders";
+import locationsRouter from "./locations";
+import availabilityRouter from "./availability";
 
 const router: IRouter = Router();
 
@@ -12,5 +14,7 @@ router.use(productsRouter);
 router.use(reviewsRouter);
 router.use(inquiriesRouter);
 router.use(ordersRouter);
+router.use(locationsRouter);
+router.use(availabilityRouter);
 
 export default router;

@@ -100,3 +100,74 @@ export const insertInquirySchema = createInsertSchema(inquiriesTable).omit({
 
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 export type Inquiry = typeof inquiriesTable.$inferSelect;
+
+export const locationsTable = pgTable("locations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  workHours: text("work_hours").notNull().default(""),
+  contacts: jsonb("contacts").notNull().default({}),
+  leadTimeDays: integer("lead_time_days").notNull().default(1),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertLocationSchema = createInsertSchema(locationsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateLocationSchema = insertLocationSchema.partial();
+
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+export type UpdateLocation = z.infer<typeof updateLocationSchema>;
+export type Location = typeof locationsTable.$inferSelect;
+
+export const deliveryOptionsTable = pgTable("delivery_options", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  priceMin: integer("price_min").notNull().default(0),
+  priceMax: integer("price_max").notNull().default(0),
+  leadTimeDays: integer("lead_time_days").notNull().default(3),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDeliveryOptionSchema = createInsertSchema(deliveryOptionsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateDeliveryOptionSchema = insertDeliveryOptionSchema.partial();
+
+export type InsertDeliveryOption = z.infer<typeof insertDeliveryOptionSchema>;
+export type UpdateDeliveryOption = z.infer<typeof updateDeliveryOptionSchema>;
+export type DeliveryOption = typeof deliveryOptionsTable.$inferSelect;
+
+export const productLocationStockTable = pgTable("product_location_stock", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => productsTable.id, { onDelete: "cascade" }),
+  variantId: integer("variant_id").references(() => productVariantsTable.id, { onDelete: "set null" }),
+  locationId: integer("location_id").references(() => locationsTable.id, { onDelete: "cascade" }),
+  deliveryOptionId: integer("delivery_option_id").references(() => deliveryOptionsTable.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(0),
+  serialNumber: text("serial_number"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertProductLocationStockSchema = createInsertSchema(productLocationStockTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateProductLocationStockSchema = insertProductLocationStockSchema.partial();
+
+export type InsertProductLocationStock = z.infer<typeof insertProductLocationStockSchema>;
+export type UpdateProductLocationStock = z.infer<typeof updateProductLocationStockSchema>;
+export type ProductLocationStock = typeof productLocationStockTable.$inferSelect;

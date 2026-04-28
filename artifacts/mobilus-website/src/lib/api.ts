@@ -63,6 +63,58 @@ export interface ApiInquiry {
   createdAt: string;
 }
 
+export interface ApiLocation {
+  id: number;
+  name: string;
+  address: string;
+  workHours: string;
+  contacts: { phone?: string; email?: string };
+  leadTimeDays: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ApiLocationInput = Omit<ApiLocation, "id" | "createdAt" | "updatedAt">;
+
+export interface ApiDeliveryOption {
+  id: number;
+  name: string;
+  priceMin: number;
+  priceMax: number;
+  leadTimeDays: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ApiDeliveryOptionInput = Omit<ApiDeliveryOption, "id" | "createdAt" | "updatedAt">;
+
+export interface ApiAvailabilityEntry {
+  id: number;
+  productId: number;
+  variantId: number | null;
+  locationId: number | null;
+  deliveryOptionId: number | null;
+  quantity: number;
+  serialNumber: string | null;
+  locationName: string | null;
+  locationAddress: string | null;
+  locationLeadTimeDays: number | null;
+  locationIsActive: boolean | null;
+  deliveryName: string | null;
+  deliveryPriceMin: number | null;
+  deliveryPriceMax: number | null;
+  deliveryLeadTimeDays: number | null;
+  deliveryIsActive: boolean | null;
+  variantColorName: string | null;
+}
+
+export interface ApiAvailability {
+  entries: ApiAvailabilityEntry[];
+  totalStock: number;
+}
+
 const BASE = "/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -222,6 +274,65 @@ export const api = {
         method: "PATCH",
         headers: { ...adminHeaders(key), "Content-Type": "application/json" },
         body: JSON.stringify(data),
+      }),
+  },
+  locations: {
+    list: () => request<ApiLocation[]>("/locations"),
+    create: (data: ApiLocationInput, key: string) =>
+      request<ApiLocation>("/locations", {
+        method: "POST",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    update: (id: number, data: Partial<ApiLocationInput>, key: string) =>
+      request<ApiLocation>(`/locations/${id}`, {
+        method: "PATCH",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number, key: string) =>
+      request<{ success: boolean }>(`/locations/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(key),
+      }),
+  },
+  deliveryOptions: {
+    list: () => request<ApiDeliveryOption[]>("/delivery-options"),
+    create: (data: ApiDeliveryOptionInput, key: string) =>
+      request<ApiDeliveryOption>("/delivery-options", {
+        method: "POST",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    update: (id: number, data: Partial<ApiDeliveryOptionInput>, key: string) =>
+      request<ApiDeliveryOption>(`/delivery-options/${id}`, {
+        method: "PATCH",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number, key: string) =>
+      request<{ success: boolean }>(`/delivery-options/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(key),
+      }),
+  },
+  availability: {
+    getByProduct: (productId: number) =>
+      request<ApiAvailability>(`/products/${productId}/availability`),
+    create: (
+      productId: number,
+      data: { variantId?: number | null; locationId?: number | null; deliveryOptionId?: number | null; quantity: number; serialNumber?: string | null },
+      key: string
+    ) =>
+      request<ApiAvailabilityEntry>(`/products/${productId}/availability`, {
+        method: "POST",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    delete: (entryId: number, key: string) =>
+      request<{ success: boolean }>(`/availability/${entryId}`, {
+        method: "DELETE",
+        headers: adminHeaders(key),
       }),
   },
 };
