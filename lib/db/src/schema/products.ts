@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, jsonb, timestamp, boolean, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -152,7 +152,7 @@ export const leasingPartnersTable = pgTable("leasing_partners", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   logoUrl: text("logo_url"),
-  interestRate: text("interest_rate").notNull().default("8.9"),
+  interestRate: numeric("interest_rate", { precision: 5, scale: 2 }).notNull().default("8.90"),
   infoText: text("info_text").notNull().default(""),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
