@@ -66,15 +66,15 @@ export default function Leasing() {
         </motion.div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+      <div className="container mx-auto px-4 md:px-6 max-w-3xl">
+        <div className="space-y-8">
 
           {/* ===== Unified Calculator Card ===== */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="lg:col-span-3 bg-card border border-border overflow-hidden"
+            className="bg-card border border-border overflow-hidden"
           >
             <div className="p-8 md:p-10">
               <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter mb-8 flex items-center gap-3">
@@ -171,12 +171,12 @@ export default function Leasing() {
             </div>
           </motion.div>
 
-          {/* ===== Right Column: Breakdown + Partners ===== */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* ===== Below: Breakdown + Partners side by side ===== */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Breakdown */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="bg-card border border-border p-6"
             >
@@ -201,8 +201,8 @@ export default function Leasing() {
 
             {/* Leasing Partners */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="bg-card border border-border p-6"
             >
