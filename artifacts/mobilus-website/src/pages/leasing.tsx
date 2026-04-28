@@ -212,13 +212,19 @@ export default function Leasing() {
               <div className="space-y-3" ref={bubbleRef}>
                 {partners.map((partner) => (
                   <div key={partner.id} className="relative flex items-center gap-3 p-3 border border-border">
-                    <div className="w-2 h-2 bg-primary flex-shrink-0" />
+                    {partner.logoUrl
+                      ? <img src={partner.logoUrl} alt={partner.name} className="w-8 h-8 object-contain flex-shrink-0" />
+                      : <div className="w-2 h-2 bg-primary flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-foreground text-sm">{partner.name}</p>
                       <p className="text-xs text-muted-foreground">{partner.interestRate}% p.a.</p>
                     </div>
                     {partner.infoText && (
-                      <div className="relative flex-shrink-0">
+                      <div
+                        className="relative flex-shrink-0"
+                        onMouseEnter={() => setOpenBubble(partner.id)}
+                        onMouseLeave={() => setOpenBubble(null)}
+                      >
                         <button
                           onClick={() => setOpenBubble(openBubble === partner.id ? null : partner.id)}
                           className="text-muted-foreground hover:text-primary transition-colors"
