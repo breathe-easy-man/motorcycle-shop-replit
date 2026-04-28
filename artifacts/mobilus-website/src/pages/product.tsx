@@ -1215,7 +1215,7 @@ export default function ProductPage() {
             <div className="flex items-center gap-3 mb-8">
               <div className="w-1 h-8 bg-primary" />
               <h2 className="text-2xl font-black text-foreground uppercase tracking-tighter">
-                {lang === "lv" ? "Lēzinga kalkulators" : lang === "ru" ? "Калькулятор лизинга" : "Leasing Calculator"}
+                {lang === "lv" ? "Līzinga kalkulators" : lang === "ru" ? "Калькулятор лизинга" : "Leasing Calculator"}
               </h2>
             </div>
 

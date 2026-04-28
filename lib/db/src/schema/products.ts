@@ -148,6 +148,29 @@ export type InsertDeliveryOption = z.infer<typeof insertDeliveryOptionSchema>;
 export type UpdateDeliveryOption = z.infer<typeof updateDeliveryOptionSchema>;
 export type DeliveryOption = typeof deliveryOptionsTable.$inferSelect;
 
+export const leasingPartnersTable = pgTable("leasing_partners", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  logoUrl: text("logo_url"),
+  interestRate: text("interest_rate").notNull().default("8.9"),
+  infoText: text("info_text").notNull().default(""),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertLeasingPartnerSchema = createInsertSchema(leasingPartnersTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateLeasingPartnerSchema = insertLeasingPartnerSchema.partial();
+
+export type InsertLeasingPartner = z.infer<typeof insertLeasingPartnerSchema>;
+export type UpdateLeasingPartner = z.infer<typeof updateLeasingPartnerSchema>;
+export type LeasingPartner = typeof leasingPartnersTable.$inferSelect;
+
 export const productLocationStockTable = pgTable("product_location_stock", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").notNull().references(() => productsTable.id, { onDelete: "cascade" }),

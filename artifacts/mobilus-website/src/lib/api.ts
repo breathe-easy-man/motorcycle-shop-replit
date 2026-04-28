@@ -118,6 +118,19 @@ export interface ApiAvailability {
   totalStock: number;
 }
 
+export interface ApiLeasingPartner {
+  id: number;
+  name: string;
+  logoUrl: string | null;
+  interestRate: string;
+  infoText: string;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ApiLeasingPartnerInput = Omit<ApiLeasingPartner, "id" | "createdAt" | "updatedAt">;
+
 const BASE = "/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -315,6 +328,26 @@ export const api = {
       }),
     delete: (id: number, key: string) =>
       request<{ success: boolean }>(`/delivery-options/${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(key),
+      }),
+  },
+  leasingPartners: {
+    list: () => request<ApiLeasingPartner[]>("/leasing-partners"),
+    create: (data: ApiLeasingPartnerInput, key: string) =>
+      request<ApiLeasingPartner>("/leasing-partners", {
+        method: "POST",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    update: (id: number, data: Partial<ApiLeasingPartnerInput>, key: string) =>
+      request<ApiLeasingPartner>(`/leasing-partners/${id}`, {
+        method: "PATCH",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number, key: string) =>
+      request<{ success: boolean }>(`/leasing-partners/${id}`, {
         method: "DELETE",
         headers: adminHeaders(key),
       }),

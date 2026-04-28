@@ -6,6 +6,7 @@ import inquiriesRouter from "./inquiries";
 import ordersRouter from "./orders";
 import locationsRouter from "./locations";
 import availabilityRouter from "./availability";
+import leasingPartnersRouter from "./leasing-partners";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(inquiriesRouter);
 router.use(ordersRouter);
 router.use(locationsRouter);
 router.use(availabilityRouter);
+router.use(leasingPartnersRouter);
 
 export default router;

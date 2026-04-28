@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
-import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry, type ApiAvailabilityEntryAdmin } from "@/lib/api";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry, type ApiAvailabilityEntryAdmin, type ApiLeasingPartner, type ApiLeasingPartnerInput } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +8,14 @@ import {
   Plus, Pencil, Trash2, LogOut, Save, X, Package,
   ChevronUp, ChevronDown, Search, Star, MessageSquare,
   CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette, ShoppingCart,
-  MapPin, Truck, Building2
+  MapPin, Truck, Building2, Percent
 } from "lucide-react";
 
 const STORAGE_KEY = "mobilus_admin_key";
 const CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV", "Velo", "Skrituļslidas", "Slēpes", "Snoubords"];
 
 type FormState = Omit<ApiProductInput, "variants">;
-type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability";
+type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability" | "leasing";
 
 type VariantFormItem = {
   id?: number;
@@ -107,6 +107,13 @@ export default function AdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<ApiProduct | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Leasing partners state
+  const [leasingPartners, setLeasingPartners] = useState<ApiLeasingPartner[]>([]);
+  const [editingPartner, setEditingPartner] = useState<ApiLeasingPartner | null>(null);
+  const [partnerForm, setPartnerForm] = useState<ApiLeasingPartnerInput>({ name: "", logoUrl: null, interestRate: "8.9", infoText: "", displayOrder: 0 });
+  const [showPartnerForm, setShowPartnerForm] = useState(false);
+  const [savingPartner, setSavingPartner] = useState(false);
+
   // Reviews state
   const [reviews, setReviews] = useState<ApiReview[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
@@ -180,6 +187,13 @@ export default function AdminPage() {
     } catch {}
   }, []);
 
+  const loadLeasingPartners = useCallback(async () => {
+    try {
+      const data = await api.leasingPartners.list();
+      setLeasingPartners(data);
+    } catch {}
+  }, []);
+
   const loadProductStockEntries = useCallback(async (productId: number) => {
     setLoadingAvailability(true);
     try {
@@ -200,8 +214,9 @@ export default function AdminPage() {
       loadOrders();
       loadLocations();
       loadDeliveryOptions();
+      loadLeasingPartners();
     }
-  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions]);
+  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions, loadLeasingPartners]);
 
   async function handleLogin() {
     setAuthError("");
@@ -504,6 +519,7 @@ export default function AdminPage() {
                 { key: "inquiries" as const, label: "Inquiries", icon: MessageSquare, badge: unreadInquiries },
                 { key: "orders" as const, label: "Orders", icon: ShoppingCart, badge: orders.filter(o => o.status === "pending").length },
                 { key: "availability" as const, label: "Pieejamība", icon: MapPin, badge: 0 },
+                { key: "leasing" as const, label: "Leasing", icon: Percent, badge: 0 },
               ] as { key: AdminTab; label: string; icon: LucideIcon; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
                 <button
                   key={key}
@@ -1704,6 +1720,121 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ===== LEASING TAB ===== */}
+      {activeTab === "leasing" && (
+        <div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-black uppercase tracking-tighter">Leasing Partners</h1>
+              <p className="text-muted-foreground text-sm">{leasingPartners.length} partners</p>
+            </div>
+            <Button onClick={() => { setEditingPartner(null); setPartnerForm({ name: "", logoUrl: null, interestRate: "8.9", infoText: "", displayOrder: leasingPartners.length }); setShowPartnerForm(true); }}
+              className="rounded-none bg-primary hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-2" /> Add Partner
+            </Button>
+          </div>
+
+          {/* Partner list */}
+          <div className="space-y-3 mb-6">
+            {leasingPartners.map((partner) => (
+              <div key={partner.id} className="bg-card border border-border p-4 flex items-start gap-4">
+                <div className="w-8 h-8 bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-foreground">{partner.name}</span>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 font-bold">{partner.interestRate}% p.a.</span>
+                    <span className="text-xs text-muted-foreground">Order: {partner.displayOrder}</span>
+                  </div>
+                  {partner.infoText && <p className="text-xs text-muted-foreground truncate">{partner.infoText}</p>}
+                  {partner.logoUrl && <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{partner.logoUrl}</p>}
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => {
+                    setEditingPartner(partner);
+                    setPartnerForm({ name: partner.name, logoUrl: partner.logoUrl, interestRate: partner.interestRate, infoText: partner.infoText, displayOrder: partner.displayOrder });
+                    setShowPartnerForm(true);
+                  }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-600" onClick={async () => {
+                    try {
+                      await api.leasingPartners.delete(partner.id, adminKey);
+                      setLeasingPartners(ps => ps.filter(p => p.id !== partner.id));
+                    } catch {}
+                  }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {leasingPartners.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground border border-dashed border-border">
+                <Building2 className="h-8 w-8 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No leasing partners yet.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Partner form */}
+          {showPartnerForm && (
+            <div className="bg-card border border-primary/30 p-6">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4">
+                {editingPartner ? "Edit Partner" : "New Partner"}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Name *</label>
+                  <Input value={partnerForm.name} onChange={(e) => setPartnerForm(f => ({ ...f, name: e.target.value }))} className="rounded-none text-sm h-9" placeholder="InCredit Group" />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Interest Rate (%)</label>
+                  <Input value={partnerForm.interestRate} onChange={(e) => setPartnerForm(f => ({ ...f, interestRate: e.target.value }))} className="rounded-none text-sm h-9" placeholder="8.9" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-muted-foreground mb-1">Logo URL</label>
+                  <Input value={partnerForm.logoUrl ?? ""} onChange={(e) => setPartnerForm(f => ({ ...f, logoUrl: e.target.value || null }))} className="rounded-none text-sm h-9 font-mono" placeholder="https://..." />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-muted-foreground mb-1">Info Bubble Text</label>
+                  <textarea value={partnerForm.infoText} onChange={(e) => setPartnerForm(f => ({ ...f, infoText: e.target.value }))} rows={3}
+                    className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground resize-none"
+                    placeholder="Partner details shown in the info tooltip on the leasing page..." />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Display Order</label>
+                  <Input type="number" value={partnerForm.displayOrder} onChange={(e) => setPartnerForm(f => ({ ...f, displayOrder: Number(e.target.value) }))} className="rounded-none text-sm h-9" />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button size="sm" className="rounded-none bg-primary hover:bg-primary/90" disabled={savingPartner || !partnerForm.name}
+                  onClick={async () => {
+                    setSavingPartner(true);
+                    try {
+                      if (editingPartner) {
+                        const updated = await api.leasingPartners.update(editingPartner.id, partnerForm, adminKey);
+                        setLeasingPartners(ps => ps.map(p => p.id === updated.id ? updated : p));
+                      } else {
+                        const created = await api.leasingPartners.create(partnerForm, adminKey);
+                        setLeasingPartners(ps => [...ps, created]);
+                      }
+                      setShowPartnerForm(false);
+                      setEditingPartner(null);
+                    } catch {}
+                    setSavingPartner(false);
+                  }}>
+                  <Save className="h-3.5 w-3.5 mr-1" /> {savingPartner ? "Saving..." : "Save"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowPartnerForm(false); setEditingPartner(null); }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

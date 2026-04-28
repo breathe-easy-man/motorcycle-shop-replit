@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db, productsTable, productVariantsTable, locationsTable, deliveryOptionsTable } from "@workspace/db";
+import { db, productsTable, productVariantsTable, locationsTable, deliveryOptionsTable, leasingPartnersTable } from "@workspace/db";
 
 const products = [
   {
@@ -327,6 +327,34 @@ async function seed() {
       isActive: true,
     });
     console.log("  Seeded default delivery option");
+  }
+
+  const existingPartners = await db.select().from(leasingPartnersTable);
+  if (existingPartners.length === 0) {
+    await db.insert(leasingPartnersTable).values([
+      {
+        name: "InCredit Group",
+        logoUrl: null,
+        interestRate: "8.9",
+        infoText: "Ātra lēmuma pieņemšana, elastīgi nosacījumi. Pirmā iemaksa no 10%. Termiņš no 12 līdz 60 mēnešiem.",
+        displayOrder: 1,
+      },
+      {
+        name: "UNO Leasing",
+        logoUrl: null,
+        interestRate: "8.5",
+        infoText: "Zema procentu likme, bez slēptajām maksām. Iespēja apdrošināt preci pie mums. Ātrs pieteikuma process tiešsaistē.",
+        displayOrder: 2,
+      },
+      {
+        name: "Motive",
+        logoUrl: null,
+        interestRate: "9.2",
+        infoText: "Finansēšana gan privātpersonām, gan uzņēmumiem. Īpaši nosacījumi elektro tehnikā. Lēmums 15 minūtēs.",
+        displayOrder: 3,
+      },
+    ]);
+    console.log("  Seeded default leasing partners");
   }
 
   console.log(`Done seeding.`);
