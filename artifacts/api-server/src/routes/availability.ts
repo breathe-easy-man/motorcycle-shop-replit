@@ -26,7 +26,6 @@ router.get("/products/:id/availability", async (req, res) => {
         locationId: productLocationStockTable.locationId,
         deliveryOptionId: productLocationStockTable.deliveryOptionId,
         quantity: productLocationStockTable.quantity,
-        serialNumber: productLocationStockTable.serialNumber,
         locationName: locationsTable.name,
         locationAddress: locationsTable.address,
         locationLeadTimeDays: locationsTable.leadTimeDays,

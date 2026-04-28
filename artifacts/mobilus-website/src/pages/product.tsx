@@ -212,6 +212,7 @@ export default function ProductPage() {
 
   // Availability
   const [availability, setAvailability] = useState<ApiAvailability | null>(null);
+  const [globalDeliveryOptions, setGlobalDeliveryOptions] = useState<import("@/lib/api").ApiDeliveryOption[]>([]);
   const [availabilityOpenStores, setAvailabilityOpenStores] = useState(true);
   const [availabilityOpenDelivery, setAvailabilityOpenDelivery] = useState(false);
 
@@ -230,6 +231,10 @@ export default function ProductPage() {
         fetch(`/api/products/${data.id}/availability`)
           .then((r) => r.json())
           .then((avail) => setAvailability(avail))
+          .catch(() => {});
+        fetch("/api/delivery-options")
+          .then((r) => r.json())
+          .then((opts) => Array.isArray(opts) ? setGlobalDeliveryOptions(opts.filter((o: import("@/lib/api").ApiDeliveryOption) => o.isActive)) : null)
           .catch(() => {});
         return fetch("/api/products");
       })
@@ -677,10 +682,12 @@ export default function ProductPage() {
             </div>
 
             {/* Availability */}
-            {availability && (availability.entries.length > 0) && (() => {
-              const storeEntries = availability.entries.filter(e => e.locationName);
-              const deliveryEntries = availability.entries.filter(e => e.deliveryName);
+            {(availability || globalDeliveryOptions.length > 0) && (() => {
+              const storeEntries = availability?.entries.filter(e => e.locationName && e.locationIsActive) ?? [];
               const today = new Date();
+              const toYMD = (d: Date) => d.toISOString().slice(0, 10);
+              const showBlock = storeEntries.length > 0 || globalDeliveryOptions.length > 0;
+              if (!showBlock) return null;
               return (
                 <div className="border border-border bg-card mb-4 overflow-hidden">
                   {/* Stores accordion */}
@@ -702,9 +709,7 @@ export default function ProductPage() {
                             const leadDays = e.locationLeadTimeDays ?? 0;
                             const est = new Date(today);
                             est.setDate(est.getDate() + leadDays);
-                            const estStr = leadDays === 0
-                              ? (lang === "lv" ? "Šodien" : lang === "ru" ? "Сегодня" : "Today")
-                              : est.toLocaleDateString(lang === "lv" ? "lv-LV" : lang === "ru" ? "ru-RU" : "en-GB", { day: "2-digit", month: "2-digit" });
+                            const estStr = toYMD(est);
                             return (
                               <div key={e.id} className="flex items-start justify-between gap-2 text-sm">
                                 <div>
@@ -725,8 +730,8 @@ export default function ProductPage() {
                       )}
                     </div>
                   )}
-                  {/* Delivery accordion */}
-                  {deliveryEntries.length > 0 && (
+                  {/* Delivery accordion — always shows globally active delivery options */}
+                  {globalDeliveryOptions.length > 0 && (
                     <div className={storeEntries.length > 0 ? "border-t border-border" : ""}>
                       <button
                         className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
@@ -740,22 +745,18 @@ export default function ProductPage() {
                       </button>
                       {availabilityOpenDelivery && (
                         <div className="border-t border-border px-4 pb-3 pt-2 space-y-2">
-                          {deliveryEntries.map((e) => {
-                            const leadDays = e.deliveryLeadTimeDays ?? 3;
+                          {globalDeliveryOptions.map((d) => {
                             const est = new Date(today);
-                            est.setDate(est.getDate() + leadDays);
-                            const estStr = est.toLocaleDateString(lang === "lv" ? "lv-LV" : lang === "ru" ? "ru-RU" : "en-GB", { day: "2-digit", month: "2-digit" });
-                            const priceStr = e.deliveryPriceMin === 0 && e.deliveryPriceMax === 0
+                            est.setDate(est.getDate() + d.leadTimeDays);
+                            const estStr = toYMD(est);
+                            const priceStr = d.priceMin === 0 && d.priceMax === 0
                               ? (lang === "lv" ? "Bezmaksas" : lang === "ru" ? "Бесплатно" : "Free")
-                              : e.deliveryPriceMin === e.deliveryPriceMax
-                                ? `€${e.deliveryPriceMin}`
-                                : `€${e.deliveryPriceMin}–€${e.deliveryPriceMax}`;
+                              : d.priceMin === d.priceMax
+                                ? `€${d.priceMin}`
+                                : `€${d.priceMin}–€${d.priceMax}`;
                             return (
-                              <div key={e.id} className="flex items-start justify-between gap-2 text-sm">
-                                <div>
-                                  <span className="font-bold text-foreground">{e.deliveryName}</span>
-                                  {e.variantColorName && <p className="text-xs text-primary mt-0.5">{e.variantColorName}</p>}
-                                </div>
+                              <div key={d.id} className="flex items-start justify-between gap-2 text-sm">
+                                <span className="font-bold text-foreground">{d.name}</span>
                                 <div className="text-right flex-shrink-0">
                                   <span className="text-xs font-bold text-foreground">{priceStr}</span>
                                   <p className="text-xs text-muted-foreground">{lang === "lv" ? "Līdz" : lang === "ru" ? "До" : "By"} {estStr}</p>

@@ -1534,7 +1534,6 @@ export default function AdminPage() {
                             <th className="text-left px-3 py-2 font-bold">Veikals / Piegāde</th>
                             <th className="text-left px-3 py-2 font-bold">Krāsa</th>
                             <th className="text-left px-3 py-2 font-bold">Daudzums</th>
-                            <th className="text-left px-3 py-2 font-bold">Sērijas nr.</th>
                             <th className="text-right px-3 py-2"></th>
                           </tr>
                         </thead>
@@ -1550,7 +1549,6 @@ export default function AdminPage() {
                               </td>
                               <td className="px-3 py-2 text-muted-foreground">{e.variantColorName ?? "Base"}</td>
                               <td className="px-3 py-2 font-bold text-foreground">{e.quantity}</td>
-                              <td className="px-3 py-2 text-muted-foreground font-mono">{e.serialNumber ?? "—"}</td>
                               <td className="px-3 py-2 text-right">
                                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400"
                                   onClick={async () => {
@@ -1622,7 +1620,12 @@ export default function AdminPage() {
                           const del = deliveryOptions.find(d => d.id === Number(stockEntryForm.deliveryOptionId));
                           const variant = variantItems.find(v => v.id === Number(stockEntryForm.variantId));
                           const enriched: ApiAvailabilityEntry = {
-                            ...created,
+                            id: created.id,
+                            productId: created.productId,
+                            variantId: created.variantId ?? null,
+                            locationId: created.locationId ?? null,
+                            deliveryOptionId: created.deliveryOptionId ?? null,
+                            quantity: created.quantity,
                             locationName: loc?.name ?? null,
                             locationAddress: loc?.address ?? null,
                             locationLeadTimeDays: loc?.leadTimeDays ?? null,

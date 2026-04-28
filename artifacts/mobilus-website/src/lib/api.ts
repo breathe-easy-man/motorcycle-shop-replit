@@ -97,7 +97,6 @@ export interface ApiAvailabilityEntry {
   locationId: number | null;
   deliveryOptionId: number | null;
   quantity: number;
-  serialNumber: string | null;
   locationName: string | null;
   locationAddress: string | null;
   locationLeadTimeDays: number | null;
@@ -108,6 +107,10 @@ export interface ApiAvailabilityEntry {
   deliveryLeadTimeDays: number | null;
   deliveryIsActive: boolean | null;
   variantColorName: string | null;
+}
+
+export interface ApiAvailabilityEntryAdmin extends ApiAvailabilityEntry {
+  serialNumber: string | null;
 }
 
 export interface ApiAvailability {
