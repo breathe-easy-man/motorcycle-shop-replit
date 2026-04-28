@@ -78,7 +78,7 @@ router.get("/products/:id/availability/admin", requireAdmin, async (req, res) =>
     const totalStockRow = await db
       .select({ total: sql<number>`coalesce(sum(${productLocationStockTable.quantity}), 0)` })
       .from(productLocationStockTable)
-      .leftJoin(locationsTable, eq(productLocationStockTable.locationId, locationsTable.id))
+      .innerJoin(locationsTable, eq(productLocationStockTable.locationId, locationsTable.id))
       .where(eq(productLocationStockTable.productId, productId));
 
     const totalStock = Number(totalStockRow[0]?.total ?? 0);
@@ -113,13 +113,15 @@ router.post("/products/:id/availability", requireAdmin, async (req, res) => {
       return;
     }
 
-    // If variantId provided, verify it belongs to this product
+    // If variantId provided, verify it belongs to this specific product
     if (variantId != null) {
       const [variant] = await db.select({ id: productVariantsTable.id })
         .from(productVariantsTable)
-        .where(eq(productVariantsTable.id, Number(variantId)));
+        .where(
+          sql`${productVariantsTable.id} = ${Number(variantId)} AND ${productVariantsTable.productId} = ${productId}`
+        );
       if (!variant) {
-        res.status(400).json({ error: "Variant not found" });
+        res.status(400).json({ error: "Variant not found or does not belong to this product" });
         return;
       }
     }
