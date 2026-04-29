@@ -290,6 +290,7 @@ router.get("/search", async (req, res) => {
           ilike(productsTable.category, pattern),
           ilike(productsTable.manufacturerDescLv, pattern),
           ilike(productsTable.manufacturerDescEn, pattern),
+          ilike(productsTable.manufacturerDescRu, pattern),
         )
       )
       .orderBy(asc(productsTable.name))
