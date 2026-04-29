@@ -26,6 +26,14 @@ function getProductPath(result: ApiSearchResult): string {
   return `/moto/${result.slug}`;
 }
 
+function groupByCategory(results: ApiSearchResult[]): Record<string, ApiSearchResult[]> {
+  return results.reduce<Record<string, ApiSearchResult[]>>((acc, r) => {
+    if (!acc[r.category]) acc[r.category] = [];
+    acc[r.category].push(r);
+    return acc;
+  }, {});
+}
+
 export function Navbar() {
   const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -36,9 +44,12 @@ export function Navbar() {
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchBarOpen, setSearchBarOpen] = useState(false); // mobile only; desktop is always visible
-  const searchRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  // Separate refs so each search region can be independently detected
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navLinks = [
@@ -73,13 +84,23 @@ export function Navbar() {
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inDesktop = desktopSearchRef.current?.contains(target) ?? false;
+      const inMobile = mobileSearchRef.current?.contains(target) ?? false;
+      if (!inDesktop && !inMobile) {
         setDropdownOpen(false);
-        setSearchBarOpen(false);
+        setMobileSearchOpen(false);
       }
     }
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  const closeResult = useCallback(() => {
+    setDropdownOpen(false);
+    setMobileSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
   }, []);
 
   const handleSearchSubmit = useCallback((e?: React.FormEvent) => {
@@ -87,25 +108,65 @@ export function Navbar() {
     const q = searchQuery.trim();
     if (!q) return;
     setDropdownOpen(false);
-    setSearchBarOpen(false);
+    setMobileSearchOpen(false);
     navigate(`/search?q=${encodeURIComponent(q)}`);
   }, [searchQuery, navigate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSearchSubmit();
-    if (e.key === "Escape") { setDropdownOpen(false); setSearchBarOpen(false); }
+    if (e.key === "Escape") { setDropdownOpen(false); setMobileSearchOpen(false); }
   };
 
-  const openSearch = () => {
-    setSearchBarOpen(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
+  const openMobileSearch = () => {
+    setMobileSearchOpen(true);
+    setTimeout(() => mobileInputRef.current?.focus(), 50);
   };
 
-  const groupedResults = searchResults.reduce<Record<string, ApiSearchResult[]>>((acc, r) => {
-    if (!acc[r.category]) acc[r.category] = [];
-    acc[r.category].push(r);
-    return acc;
-  }, {});
+  const groupedResults = groupByCategory(searchResults);
+
+  const AutocompleteDropdown = ({ mobile = false }: { mobile?: boolean }) => (
+    <div className={`absolute top-full ${mobile ? "left-0 right-0" : "right-0 w-80"} mt-1 bg-white border border-border shadow-xl z-50 max-h-96 overflow-y-auto`}>
+      {searchResults.length === 0 ? (
+        <div className="p-4 text-sm text-muted-foreground">{t.search.no_results_inline}</div>
+      ) : (
+        <>
+          {Object.entries(groupedResults).map(([cat, items]) => (
+            <div key={cat}>
+              <div className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground bg-muted/40 border-b border-border">
+                {cat}
+              </div>
+              {items.map((r) => (
+                <Link
+                  key={r.id}
+                  href={getProductPath(r)}
+                  onClick={closeResult}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors border-b border-border/30 last:border-0"
+                >
+                  <img
+                    src={r.image}
+                    alt={r.name}
+                    className="w-12 h-10 object-cover flex-shrink-0 bg-muted"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{r.name}</p>
+                    <p className="text-xs text-primary font-bold">€{r.price.toLocaleString()}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ))}
+          <button
+            onMouseDown={(e) => { e.preventDefault(); handleSearchSubmit(); }}
+            className="w-full px-4 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-colors border-t border-border text-left flex items-center gap-2"
+          >
+            <Search className="h-4 w-4" />
+            {t.search.see_all} "{searchQuery}"
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white border-b border-border shadow-sm">
@@ -132,10 +193,10 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Desktop Right: Search + Language + Cart */}
-        <div className="hidden md:flex items-center gap-3 flex-shrink-0" ref={searchRef}>
-          {/* Search — always visible on desktop */}
-          <div className="relative">
+        {/* Desktop Right: Search (persistent) + Language + Cart */}
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+          {/* Desktop search — always visible, own ref */}
+          <div className="relative" ref={desktopSearchRef}>
             <form onSubmit={handleSearchSubmit} className="flex items-center">
               <input
                 type="text"
@@ -146,55 +207,15 @@ export function Navbar() {
                 className="w-52 h-9 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
                 autoComplete="off"
               />
-              <button type="submit" className="h-9 w-9 flex items-center justify-center border border-l-0 border-border hover:bg-muted text-muted-foreground">
+              <button
+                type="submit"
+                className="h-9 w-9 flex items-center justify-center border border-l-0 border-border hover:bg-muted text-muted-foreground"
+              >
                 <Search className="h-4 w-4" />
               </button>
             </form>
 
-            {/* Autocomplete Dropdown */}
-            {dropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-border shadow-xl z-50 max-h-96 overflow-y-auto">
-                {searchResults.length === 0 ? (
-                  <div className="p-4 text-sm text-muted-foreground">{t.search.no_results_inline}</div>
-                ) : (
-                  <>
-                    {Object.entries(groupedResults).map(([cat, items]) => (
-                      <div key={cat}>
-                        <div className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground bg-muted/40 border-b border-border">
-                          {cat}
-                        </div>
-                        {items.map((r) => (
-                          <Link
-                            key={r.id}
-                            href={getProductPath(r)}
-                            onClick={() => { setDropdownOpen(false); setSearchBarOpen(false); setSearchQuery(""); }}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors border-b border-border/30 last:border-0"
-                          >
-                            <img
-                              src={r.image}
-                              alt={r.name}
-                              className="w-12 h-10 object-cover flex-shrink-0 bg-muted"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-foreground truncate">{r.name}</p>
-                              <p className="text-xs text-primary font-bold">€{r.price.toLocaleString()}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    ))}
-                    <button
-                      onClick={handleSearchSubmit}
-                      className="w-full px-4 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-colors border-t border-border text-left flex items-center gap-2"
-                    >
-                      <Search className="h-4 w-4" />
-                      {t.search.see_all} "{searchQuery}"
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+            {dropdownOpen && <AutocompleteDropdown />}
           </div>
 
           {/* Language */}
@@ -228,10 +249,10 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile: Search + Cart + Menu Toggle */}
-        <div className="md:hidden flex items-center gap-2" ref={searchRef}>
+        {/* Mobile: Search icon + Cart + Menu Toggle */}
+        <div className="md:hidden flex items-center gap-2">
           <button
-            onClick={openSearch}
+            onClick={openMobileSearch}
             className="text-foreground/60 h-9 w-9 flex items-center justify-center"
             aria-label="Search"
           >
@@ -254,53 +275,35 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Search Bar */}
-      {searchBarOpen && (
-        <div className="md:hidden border-b border-border bg-white px-4 py-2">
+      {/* Mobile Search Bar — own ref so outside-click works independently of desktop */}
+      {mobileSearchOpen && (
+        <div className="md:hidden border-b border-border bg-white px-4 py-2" ref={mobileSearchRef}>
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t.search.placeholder}
-              className="flex-1 h-10 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
-              autoFocus
-              autoComplete="off"
-            />
-            <button type="submit" className="h-10 px-4 bg-primary text-white text-sm font-bold uppercase tracking-wider">
+            <div className="relative flex-1">
+              <input
+                ref={mobileInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t.search.placeholder}
+                className="w-full h-10 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
+                autoComplete="off"
+              />
+              {dropdownOpen && <AutocompleteDropdown mobile />}
+            </div>
+            <button type="submit" className="h-10 px-4 bg-primary text-white text-sm font-bold uppercase tracking-wider flex-shrink-0">
               <Search className="h-4 w-4" />
             </button>
           </form>
-          {dropdownOpen && searchResults.length > 0 && (
-            <div className="mt-2 border border-border bg-white max-h-64 overflow-y-auto">
-              {searchResults.map((r) => (
-                <Link
-                  key={r.id}
-                  href={getProductPath(r)}
-                  onClick={() => { setDropdownOpen(false); setSearchBarOpen(false); setSearchQuery(""); }}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-muted border-b border-border/30 last:border-0"
-                >
-                  <img src={r.image} alt={r.name} className="w-10 h-8 object-cover bg-muted flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate">{r.name}</p>
-                    <p className="text-xs text-primary font-bold">€{r.price.toLocaleString()}</p>
-                  </div>
-                </Link>
-              ))}
-              <button onClick={handleSearchSubmit} className="w-full px-3 py-2 text-sm font-bold text-primary border-t border-border text-left">
-                {t.search.see_all} "{searchQuery}"
-              </button>
-            </div>
-          )}
-          {dropdownOpen && searchResults.length === 0 && !searchLoading && searchQuery.trim().length >= 2 && (
-            <p className="mt-2 px-3 py-2 text-sm text-muted-foreground">{t.search.no_results_inline}</p>
+          {searchQuery.trim().length >= 2 && !dropdownOpen && !searchLoading && (
+            <p className="mt-2 px-1 py-1 text-sm text-muted-foreground">{t.search.no_results_inline}</p>
           )}
         </div>
       )}
 
       {/* Mobile Nav */}
-      {mobileMenuOpen && !searchBarOpen && (
+      {mobileMenuOpen && !mobileSearchOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-border p-4 flex flex-col gap-2 shadow-lg">
           {navLinks.map((link) => (
             <Link
