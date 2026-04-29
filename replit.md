@@ -50,3 +50,29 @@ Light theme inspired by K-moto (kmoto.lv):
 - Seed script: `cd artifacts/api-server && pnpm exec tsx src/scripts/seed-locations.ts`
 - Admin "Pieejamība" tab: manage store locations + delivery options CRUD
 - Admin product editor "Stock" tab: add/remove per-product stock entries (edit mode only)
+
+## Email Notifications (Resend)
+
+Powered by Resend via Replit connector. All emails fire-and-forget (never block API responses).
+
+### Triggers
+| Event | Recipient | Function |
+|---|---|---|
+| POST /orders | Customer confirmation | `sendOrderConfirmation` |
+| POST /orders | Admin alert | `sendOrderAdminAlert` |
+| PATCH /orders/:id (status change) | Customer update | `sendOrderStatusUpdate` |
+| Stripe webhook paid | Customer receipt | `sendStripePaymentReceipt` |
+| POST /inquiries (product) | Customer ACK | `sendInquiryAck` |
+| POST /inquiries (product) | Admin alert | `sendInquiryAdminAlert` |
+| POST /contact (general form) | Customer ACK | `sendInquiryAck` |
+| POST /contact (general form) | Admin alert | `sendInquiryAdminAlert` |
+| POST /reviews | Admin moderation alert | `sendReviewAdminAlert` |
+
+### Files
+- `artifacts/api-server/src/lib/email.ts` — email service (Resend client + all HTML templates)
+- `artifacts/api-server/src/routes/contact.ts` — new `/api/contact` endpoint
+- `artifacts/mobilus-website/src/pages/contact.tsx` — wired to POST /api/contact
+
+### Config
+- `ADMIN_EMAIL` env var — where admin alerts go (default: `admin@mobilus.lv`)
+- From address: configured in Resend integration settings (`from_email` field)

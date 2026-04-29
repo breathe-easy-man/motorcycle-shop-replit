@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, inquiriesTable, insertInquirySchema } from "@workspace/db";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { sendInquiryAck, sendInquiryAdminAlert } from "../lib/email";
 
 const router = Router();
 
@@ -22,6 +23,27 @@ router.post("/inquiries", async (req, res) => {
       return;
     }
     const [inquiry] = await db.insert(inquiriesTable).values(parsed.data).returning();
+
+    // Fire-and-forget emails
+    void Promise.all([
+      sendInquiryAck({
+        customerName: inquiry.name,
+        customerEmail: inquiry.email,
+        customerPhone: inquiry.phone,
+        subject: `Jautājums par: ${inquiry.productName}`,
+        message: `Jautājums par produktu "${inquiry.productName}" (${inquiry.productSlug})`,
+        productSlug: inquiry.productSlug,
+      }),
+      sendInquiryAdminAlert({
+        customerName: inquiry.name,
+        customerEmail: inquiry.email,
+        customerPhone: inquiry.phone,
+        subject: `Jautājums par: ${inquiry.productName}`,
+        message: `Jautājums par produktu "${inquiry.productName}" (${inquiry.productSlug})`,
+        productSlug: inquiry.productSlug,
+      }),
+    ]);
+
     res.status(201).json(inquiry);
   } catch {
     res.status(500).json({ error: "Failed to create inquiry" });

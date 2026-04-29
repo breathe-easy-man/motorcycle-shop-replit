@@ -2,6 +2,13 @@ import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, ordersTable, productsTable, updateOrderSchema } from "@workspace/db";
 import { requireAdmin } from "../middlewares/adminAuth";
+import {
+  sendOrderConfirmation,
+  sendOrderAdminAlert,
+  sendOrderStatusUpdate,
+  sendStripePaymentReceipt,
+  type OrderEmailData,
+} from "../lib/email";
 
 const router = Router();
 
@@ -129,6 +136,25 @@ router.post("/orders", async (req, res) => {
       discountCode: discountCode ?? null,
       notes: notes ?? null,
     }).returning();
+
+    // Send emails fire-and-forget (never block the response)
+    const emailData: OrderEmailData = {
+      id: order.id,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      customerPhone: order.customerPhone ?? undefined,
+      paymentMethod: order.paymentMethod,
+      status: order.status,
+      items: (order.items as OrderEmailData["items"]),
+      total: order.total,
+      vat: order.vat,
+      notes: order.notes,
+    };
+    void Promise.all([
+      sendOrderConfirmation(emailData),
+      sendOrderAdminAlert(emailData),
+    ]);
+
     res.status(201).json(order);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Failed to create order";
@@ -153,12 +179,34 @@ router.patch("/orders/:id", requireAdmin, async (req, res) => {
       res.status(400).json({ error: "Invalid data", details: parsed.error.issues });
       return;
     }
+
+    // Fetch previous status so we only send email when status actually changes
+    const [prev] = await db.select({ status: ordersTable.status }).from(ordersTable).where(eq(ordersTable.id, Number(req.params.id)));
+
     const [order] = await db
       .update(ordersTable)
       .set({ ...parsed.data, updatedAt: new Date() })
       .where(eq(ordersTable.id, Number(req.params.id)))
       .returning();
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+
+    // Fire status-change email if status was updated
+    if (parsed.data.status && prev && parsed.data.status !== prev.status) {
+      const emailData: OrderEmailData = {
+        id: order.id,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        customerPhone: order.customerPhone ?? undefined,
+        paymentMethod: order.paymentMethod,
+        status: order.status,
+        items: (order.items as OrderEmailData["items"]),
+        total: order.total,
+        vat: order.vat,
+        notes: order.notes,
+      };
+      void sendOrderStatusUpdate(emailData);
+    }
+
     res.json(order);
   } catch {
     res.status(500).json({ error: "Failed to update order" });
@@ -293,6 +341,24 @@ router.post("/orders/stripe-webhook", async (req, res) => {
         }
 
         await db.update(ordersTable).set({ status: "paid", updatedAt: new Date() }).where(eq(ordersTable.id, Number(orderId)));
+
+        // Send payment receipt to customer
+        const [paidOrder] = await db.select().from(ordersTable).where(eq(ordersTable.id, Number(orderId)));
+        if (paidOrder) {
+          const emailData: OrderEmailData = {
+            id: paidOrder.id,
+            customerName: paidOrder.customerName,
+            customerEmail: paidOrder.customerEmail,
+            customerPhone: paidOrder.customerPhone ?? undefined,
+            paymentMethod: paidOrder.paymentMethod,
+            status: "paid",
+            items: (paidOrder.items as OrderEmailData["items"]),
+            total: paidOrder.total,
+            vat: paidOrder.vat,
+            notes: paidOrder.notes,
+          };
+          void sendStripePaymentReceipt(emailData);
+        }
       }
     }
     res.json({ received: true });

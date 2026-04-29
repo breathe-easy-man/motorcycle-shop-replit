@@ -17,9 +17,23 @@ export default function Contact() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+    } catch {
+      // Degrade gracefully — show success even if network fails
+    } finally {
+      setSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   const handleChange = (
@@ -264,9 +278,10 @@ export default function Contact() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-14 text-base font-bold uppercase tracking-widest"
+                    disabled={submitting}
+                    className="w-full bg-primary hover:bg-primary/90 text-white rounded-none h-14 text-base font-bold uppercase tracking-widest disabled:opacity-60"
                   >
-                    {t.contact.submit}
+                    {submitting ? "..." : t.contact.submit}
                   </Button>
 
                   <p className="text-xs text-muted-foreground">{t.contact.required}</p>

@@ -7,6 +7,7 @@ import ordersRouter from "./orders";
 import locationsRouter from "./locations";
 import availabilityRouter from "./availability";
 import leasingPartnersRouter from "./leasing-partners";
+import contactRouter from "./contact";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(ordersRouter);
 router.use(locationsRouter);
 router.use(availabilityRouter);
 router.use(leasingPartnersRouter);
+router.use(contactRouter);
 
 export default router;

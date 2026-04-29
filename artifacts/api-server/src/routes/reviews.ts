@@ -2,6 +2,7 @@ import { Router } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, reviewsTable, insertReviewSchema } from "@workspace/db";
 import { requireAdmin } from "../middlewares/adminAuth";
+import { sendReviewAdminAlert } from "../lib/email";
 
 const router = Router();
 
@@ -32,6 +33,15 @@ router.post("/reviews", async (req, res) => {
       return;
     }
     const [review] = await db.insert(reviewsTable).values(parsed.data).returning();
+
+    // Notify admin for moderation (fire-and-forget)
+    void sendReviewAdminAlert({
+      reviewerName: review.name,
+      productSlug: review.productSlug,
+      rating: review.rating,
+      comment: review.text ?? null,
+    });
+
     res.status(201).json(review);
   } catch {
     res.status(500).json({ error: "Failed to create review" });
