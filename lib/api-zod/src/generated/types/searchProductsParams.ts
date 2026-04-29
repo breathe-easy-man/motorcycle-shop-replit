@@ -5,19 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
-
-export interface SearchResult {
-  id: number;
-  slug: string;
-  name: string;
-  category: string;
-  image: string;
-  price: number;
-  createdAt: string;
-}
 
 export type SearchProductsParams = {
   /**

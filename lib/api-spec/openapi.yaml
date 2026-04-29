@@ -10,7 +10,38 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: products
+    description: Product operations
 paths:
+  /search:
+    get:
+      operationId: searchProducts
+      tags: [products]
+      summary: Search products
+      description: Search products by name, category, or description using a text query
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 8
+          description: Maximum number of results to return
+      responses:
+        "200":
+          description: List of matching products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchResult"
   /healthz:
     get:
       operationId: healthCheck
@@ -33,4 +64,29 @@ components:
           type: string
       required:
         - status
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        image:
+          type: string
+        price:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - slug
+        - name
+        - category
+        - image
+        - price
+        - createdAt
 

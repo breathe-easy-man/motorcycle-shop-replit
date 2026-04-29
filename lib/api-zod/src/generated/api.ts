@@ -8,6 +8,31 @@
 import * as zod from "zod";
 
 /**
+ * Search products by name, category, or description using a text query
+ * @summary Search products
+ */
+export const searchProductsQueryLimitDefault = 8;
+
+export const SearchProductsQueryParams = zod.object({
+  q: zod.coerce.string().describe("Search query string"),
+  limit: zod.coerce
+    .number()
+    .default(searchProductsQueryLimitDefault)
+    .describe("Maximum number of results to return"),
+});
+
+export const SearchProductsResponseItem = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  name: zod.string(),
+  category: zod.string(),
+  image: zod.string(),
+  price: zod.number(),
+  createdAt: zod.string(),
+});
+export const SearchProductsResponse = zod.array(SearchProductsResponseItem);
+
+/**
  * Returns server health status
  * @summary Health check
  */

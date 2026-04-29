@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface SearchResult {
   id: number;
@@ -18,14 +15,3 @@ export interface SearchResult {
   price: number;
   createdAt: string;
 }
-
-export type SearchProductsParams = {
-  /**
-   * Search query string
-   */
-  q: string;
-  /**
-   * Maximum number of results to return
-   */
-  limit?: number;
-};

@@ -36,7 +36,7 @@ export function Navbar() {
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchBarOpen, setSearchBarOpen] = useState(false);
+  const [searchBarOpen, setSearchBarOpen] = useState(false); // mobile only; desktop is always visible
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,36 +134,25 @@ export function Navbar() {
 
         {/* Desktop Right: Search + Language + Cart */}
         <div className="hidden md:flex items-center gap-3 flex-shrink-0" ref={searchRef}>
-          {/* Search */}
+          {/* Search — always visible on desktop */}
           <div className="relative">
-            {searchBarOpen ? (
-              <form onSubmit={handleSearchSubmit} className="flex items-center">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={t.search.placeholder}
-                  className="w-56 h-9 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
-                  autoComplete="off"
-                />
-                <button type="submit" className="h-9 w-9 flex items-center justify-center border border-l-0 border-border hover:bg-muted text-muted-foreground">
-                  <Search className="h-4 w-4" />
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={openSearch}
-                className="h-9 w-9 flex items-center justify-center text-foreground/60 hover:text-primary transition-colors"
-                aria-label="Search"
-              >
-                <Search className="h-5 w-5" />
+            <form onSubmit={handleSearchSubmit} className="flex items-center">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t.search.placeholder}
+                className="w-52 h-9 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
+                autoComplete="off"
+              />
+              <button type="submit" className="h-9 w-9 flex items-center justify-center border border-l-0 border-border hover:bg-muted text-muted-foreground">
+                <Search className="h-4 w-4" />
               </button>
-            )}
+            </form>
 
             {/* Autocomplete Dropdown */}
-            {dropdownOpen && searchBarOpen && (
+            {dropdownOpen && (
               <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-border shadow-xl z-50 max-h-96 overflow-y-auto">
                 {searchResults.length === 0 ? (
                   <div className="p-4 text-sm text-muted-foreground">{t.search.no_results_inline}</div>

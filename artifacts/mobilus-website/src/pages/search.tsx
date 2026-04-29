@@ -53,17 +53,17 @@ export default function SearchPage() {
   useEffect(() => {
     fetch("/api/products?featured=true")
       .then(r => r.json())
-      .then((data) => {
-        const list = Array.isArray(data) ? data : [];
-        setFeaturedProducts(list.slice(0, 6).map((p: any) => ({
-          id: p.id,
-          slug: p.slug,
-          name: p.name,
-          category: p.category,
-          image: p.image,
-          price: p.price,
-          createdAt: p.createdAt,
-        })));
+      .then((data: unknown) => {
+        const list: ApiSearchResult[] = (Array.isArray(data) ? data : []).map((p: Record<string, unknown>) => ({
+          id: Number(p.id),
+          slug: String(p.slug ?? ""),
+          name: String(p.name ?? ""),
+          category: String(p.category ?? ""),
+          image: String(p.image ?? ""),
+          price: Number(p.price ?? 0),
+          createdAt: String(p.createdAt ?? ""),
+        }));
+        setFeaturedProducts(list.slice(0, 6));
       })
       .catch(() => {});
   }, []);
