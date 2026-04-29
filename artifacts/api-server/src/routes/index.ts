@@ -8,6 +8,7 @@ import locationsRouter from "./locations";
 import availabilityRouter from "./availability";
 import leasingPartnersRouter from "./leasing-partners";
 import contactRouter from "./contact";
+import settingsRouter from "./settings";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(locationsRouter);
 router.use(availabilityRouter);
 router.use(leasingPartnersRouter);
 router.use(contactRouter);
+router.use(settingsRouter);
 
 export default router;

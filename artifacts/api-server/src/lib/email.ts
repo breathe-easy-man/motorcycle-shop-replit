@@ -12,6 +12,7 @@
  */
 
 import { Resend } from "resend";
+import { getSetting } from "../routes/settings";
 
 // ─── Resend client (never cached — tokens expire) ─────────────────────────────
 
@@ -54,10 +55,10 @@ async function getResendClient(): Promise<ResendCredentials> {
   };
 }
 
-// ─── Admin address ─────────────────────────────────────────────────────────────
+// ─── Admin address (DB setting first, env var fallback) ────────────────────────
 
-function adminEmail(): string {
-  return process.env["ADMIN_EMAIL"] ?? "admin@mobilus.lv";
+async function adminEmail(): Promise<string> {
+  return getSetting("admin_email", process.env["ADMIN_EMAIL"] ?? "admin@mobilus.lv");
 }
 
 // ─── Shared design helpers ─────────────────────────────────────────────────────
@@ -307,7 +308,7 @@ export async function sendOrderAdminAlert(order: OrderEmailData): Promise<void> 
     ${button("Apskatīt admin panelī", "https://mobilus.lv/admin")}
   `);
 
-  await send(adminEmail(), `🛒 Jauns pasūtījums #${order.id} — ${order.customerName}`, html);
+  await send(await adminEmail(), `🛒 Jauns pasūtījums #${order.id} — ${order.customerName}`, html);
 }
 
 // ─── 3. Order status update (customer) ───────────────────────────────────────
@@ -408,7 +409,7 @@ export async function sendInquiryAdminAlert(inquiry: InquiryEmailData): Promise<
     ${button("Apskatīt admin panelī", "https://mobilus.lv/admin")}
   `);
 
-  await send(adminEmail(), `💬 Jauns jautājums no ${inquiry.customerName}`, html);
+  await send(await adminEmail(), `💬 Jauns jautājums no ${inquiry.customerName}`, html);
 }
 
 // ─── 7. Review moderation alert (admin) ───────────────────────────────────────
@@ -433,5 +434,5 @@ export async function sendReviewAdminAlert(review: ReviewEmailData): Promise<voi
     ${button("Apstiprināt admin panelī", "https://mobilus.lv/admin")}
   `);
 
-  await send(adminEmail(), `⭐ Jauna atsauksme: ${review.productSlug} (${review.rating}/5)`, html);
+  await send(await adminEmail(), `⭐ Jauna atsauksme: ${review.productSlug} (${review.rating}/5)`, html);
 }

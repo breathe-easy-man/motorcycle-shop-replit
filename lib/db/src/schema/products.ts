@@ -194,3 +194,11 @@ export const updateProductLocationStockSchema = insertProductLocationStockSchema
 export type InsertProductLocationStock = z.infer<typeof insertProductLocationStockSchema>;
 export type UpdateProductLocationStock = z.infer<typeof updateProductLocationStockSchema>;
 export type ProductLocationStock = typeof productLocationStockTable.$inferSelect;
+
+export const settingsTable = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type Setting = typeof settingsTable.$inferSelect;

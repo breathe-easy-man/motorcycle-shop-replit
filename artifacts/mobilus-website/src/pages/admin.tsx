@@ -8,14 +8,14 @@ import {
   Plus, Pencil, Trash2, LogOut, Save, X, Package,
   ChevronUp, ChevronDown, Search, Star, MessageSquare,
   CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette, ShoppingCart,
-  MapPin, Truck, Building2, Percent
+  MapPin, Truck, Building2, Percent, Settings
 } from "lucide-react";
 
 const STORAGE_KEY = "mobilus_admin_key";
 const CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV", "Velo", "Skrituļslidas", "Slēpes", "Snoubords"];
 
 type FormState = Omit<ApiProductInput, "variants">;
-type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability" | "leasing";
+type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability" | "leasing" | "settings";
 
 type VariantFormItem = {
   id?: number;
@@ -103,6 +103,12 @@ export default function AdminPage() {
   const [deliveryForm, setDeliveryForm] = useState({ name: "", priceMin: 0, priceMax: 0, leadTimeDays: 3, isActive: true });
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
   const [savingDelivery, setSavingDelivery] = useState(false);
+
+  // Settings tab
+  const [settingsData, setSettingsData] = useState<Record<string, string>>({});
+  const [settingsForm, setSettingsForm] = useState({ admin_email: "" });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState<ApiProduct | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -194,6 +200,16 @@ export default function AdminPage() {
     } catch {}
   }, []);
 
+  const loadSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings", { headers: { "x-admin-key": adminKey } });
+      if (!res.ok) return;
+      const data: Record<string, string> = await res.json();
+      setSettingsData(data);
+      setSettingsForm({ admin_email: data.admin_email ?? "" });
+    } catch {}
+  }, [adminKey]);
+
   const loadProductStockEntries = useCallback(async (productId: number) => {
     setLoadingAvailability(true);
     try {
@@ -215,8 +231,9 @@ export default function AdminPage() {
       loadLocations();
       loadDeliveryOptions();
       loadLeasingPartners();
+      loadSettings();
     }
-  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions, loadLeasingPartners]);
+  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions, loadLeasingPartners, loadSettings]);
 
   async function handleLogin() {
     setAuthError("");
@@ -520,6 +537,7 @@ export default function AdminPage() {
                 { key: "orders" as const, label: "Orders", icon: ShoppingCart, badge: orders.filter(o => o.status === "pending").length },
                 { key: "availability" as const, label: "Pieejamība", icon: MapPin, badge: 0 },
                 { key: "leasing" as const, label: "Leasing", icon: Percent, badge: 0 },
+                { key: "settings" as const, label: "Settings", icon: Settings, badge: 0 },
               ] as { key: AdminTab; label: string; icon: LucideIcon; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
                 <button
                   key={key}
@@ -1837,6 +1855,71 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Settings tab */}
+      {activeTab === "settings" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold uppercase tracking-wider">Settings</h2>
+          </div>
+
+          <div className="border border-border p-6 max-w-lg space-y-6">
+            <div>
+              <h3 className="text-sm font-bold uppercase tracking-wider mb-1">Email Notifications</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Admin alert emails are sent to this address when new orders, inquiries, contact messages, and reviews arrive.
+                Leave blank to use the server default (<code className="font-mono">admin@mobilus.lv</code>).
+              </p>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1">
+                Admin Email Address
+              </label>
+              <Input
+                type="email"
+                value={settingsForm.admin_email}
+                onChange={e => setSettingsForm(f => ({ ...f, admin_email: e.target.value }))}
+                placeholder="admin@mobilus.lv"
+                className="rounded-none border-border focus:border-primary mb-3"
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  disabled={savingSettings}
+                  className="rounded-none bg-primary hover:bg-primary/90 text-white uppercase tracking-widest text-xs"
+                  onClick={async () => {
+                    setSavingSettings(true);
+                    setSettingsSaved(false);
+                    try {
+                      await fetch("/api/settings/admin_email", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+                        body: JSON.stringify({ value: settingsForm.admin_email }),
+                      });
+                      setSettingsData(d => ({ ...d, admin_email: settingsForm.admin_email }));
+                      setSettingsSaved(true);
+                      setTimeout(() => setSettingsSaved(false), 3000);
+                    } catch {}
+                    setSavingSettings(false);
+                  }}
+                >
+                  <Save className="h-3.5 w-3.5 mr-1" />
+                  {savingSettings ? "Saving..." : "Save"}
+                </Button>
+                {settingsSaved && (
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {settingsData.admin_email && (
+              <div className="bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
+                <strong>Current active address:</strong> {settingsData.admin_email}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
