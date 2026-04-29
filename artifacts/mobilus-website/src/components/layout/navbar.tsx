@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Menu, X, ChevronRight, ShoppingCart } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, ChevronRight, ShoppingCart, Search } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useI18n, Lang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
+import { api, type ApiSearchResult } from "@/lib/api";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "lv", label: "LV" },
@@ -11,11 +12,34 @@ const LANGS: { code: Lang; label: string }[] = [
   { code: "ru", label: "RU" },
 ];
 
+const MOTO_CATS = new Set(["Skūteri", "Elektro", "Motocikli", "ATV"]);
+const VELO_CATS = new Set(["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"]);
+const SKATE_CATS = new Set(["Skrituļslidas"]);
+const WINTER_CATS = new Set(["Slēpošana", "Snoubords"]);
+
+function getProductPath(result: ApiSearchResult): string {
+  const cat = result.category;
+  if (MOTO_CATS.has(cat)) return `/moto/${result.slug}`;
+  if (VELO_CATS.has(cat)) return `/velo/${result.slug}`;
+  if (SKATE_CATS.has(cat)) return `/skates/${result.slug}`;
+  if (WINTER_CATS.has(cat)) return `/winter/${result.slug}`;
+  return `/moto/${result.slug}`;
+}
+
 export function Navbar() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t, lang, setLang } = useI18n();
   const { count } = useCart();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchBarOpen, setSearchBarOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navLinks = [
     { href: "/moto", label: t.nav.moto },
@@ -25,9 +49,67 @@ export function Navbar() {
     { href: "/contact", label: t.nav.contact },
   ];
 
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setDropdownOpen(false);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await api.search.query(searchQuery.trim(), 8);
+        setSearchResults(results);
+        setDropdownOpen(true);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 150);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+        setSearchBarOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  const handleSearchSubmit = useCallback((e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    setDropdownOpen(false);
+    setSearchBarOpen(false);
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  }, [searchQuery, navigate]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSearchSubmit();
+    if (e.key === "Escape") { setDropdownOpen(false); setSearchBarOpen(false); }
+  };
+
+  const openSearch = () => {
+    setSearchBarOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const groupedResults = searchResults.reduce<Record<string, ApiSearchResult[]>>((acc, r) => {
+    if (!acc[r.category]) acc[r.category] = [];
+    acc[r.category].push(r);
+    return acc;
+  }, {});
+
   return (
     <header className="fixed top-0 w-full z-50 bg-white border-b border-border shadow-sm">
-      <div className="container mx-auto px-4 md:px-6 flex items-center justify-between gap-6 h-16">
+      <div className="container mx-auto px-4 md:px-6 flex items-center justify-between gap-4 h-16">
         <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
           <span className="text-2xl font-black tracking-tighter text-foreground uppercase italic">
             Mobilus<span className="text-primary">.</span>
@@ -50,8 +132,82 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Right: Language Switcher + Cart */}
-        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+        {/* Desktop Right: Search + Language + Cart */}
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0" ref={searchRef}>
+          {/* Search */}
+          <div className="relative">
+            {searchBarOpen ? (
+              <form onSubmit={handleSearchSubmit} className="flex items-center">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={t.search.placeholder}
+                  className="w-56 h-9 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
+                  autoComplete="off"
+                />
+                <button type="submit" className="h-9 w-9 flex items-center justify-center border border-l-0 border-border hover:bg-muted text-muted-foreground">
+                  <Search className="h-4 w-4" />
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={openSearch}
+                className="h-9 w-9 flex items-center justify-center text-foreground/60 hover:text-primary transition-colors"
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </button>
+            )}
+
+            {/* Autocomplete Dropdown */}
+            {dropdownOpen && searchBarOpen && (
+              <div className="absolute top-full right-0 mt-1 w-80 bg-white border border-border shadow-xl z-50 max-h-96 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground">{t.search.no_results_inline}</div>
+                ) : (
+                  <>
+                    {Object.entries(groupedResults).map(([cat, items]) => (
+                      <div key={cat}>
+                        <div className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground bg-muted/40 border-b border-border">
+                          {cat}
+                        </div>
+                        {items.map((r) => (
+                          <Link
+                            key={r.id}
+                            href={getProductPath(r)}
+                            onClick={() => { setDropdownOpen(false); setSearchBarOpen(false); setSearchQuery(""); }}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors border-b border-border/30 last:border-0"
+                          >
+                            <img
+                              src={r.image}
+                              alt={r.name}
+                              className="w-12 h-10 object-cover flex-shrink-0 bg-muted"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate">{r.name}</p>
+                              <p className="text-xs text-primary font-bold">€{r.price.toLocaleString()}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ))}
+                    <button
+                      onClick={handleSearchSubmit}
+                      className="w-full px-4 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-colors border-t border-border text-left flex items-center gap-2"
+                    >
+                      <Search className="h-4 w-4" />
+                      {t.search.see_all} "{searchQuery}"
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Language */}
           <div className="flex items-center gap-1">
             {LANGS.map((l, i) => (
@@ -83,8 +239,15 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile: Cart + Menu Toggle */}
-        <div className="md:hidden flex items-center gap-3">
+        {/* Mobile: Search + Cart + Menu Toggle */}
+        <div className="md:hidden flex items-center gap-2" ref={searchRef}>
+          <button
+            onClick={openSearch}
+            className="text-foreground/60 h-9 w-9 flex items-center justify-center"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </button>
           <Link href="/cart" className="relative flex items-center justify-center h-9 w-9 text-foreground/60">
             <ShoppingCart className="h-5 w-5" />
             {count > 0 && (
@@ -102,8 +265,53 @@ export function Navbar() {
         </div>
       </div>
 
+      {/* Mobile Search Bar */}
+      {searchBarOpen && (
+        <div className="md:hidden border-b border-border bg-white px-4 py-2">
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t.search.placeholder}
+              className="flex-1 h-10 px-3 text-sm border border-border focus:border-primary focus:outline-none bg-background rounded-none"
+              autoFocus
+              autoComplete="off"
+            />
+            <button type="submit" className="h-10 px-4 bg-primary text-white text-sm font-bold uppercase tracking-wider">
+              <Search className="h-4 w-4" />
+            </button>
+          </form>
+          {dropdownOpen && searchResults.length > 0 && (
+            <div className="mt-2 border border-border bg-white max-h-64 overflow-y-auto">
+              {searchResults.map((r) => (
+                <Link
+                  key={r.id}
+                  href={getProductPath(r)}
+                  onClick={() => { setDropdownOpen(false); setSearchBarOpen(false); setSearchQuery(""); }}
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-muted border-b border-border/30 last:border-0"
+                >
+                  <img src={r.image} alt={r.name} className="w-10 h-8 object-cover bg-muted flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{r.name}</p>
+                    <p className="text-xs text-primary font-bold">€{r.price.toLocaleString()}</p>
+                  </div>
+                </Link>
+              ))}
+              <button onClick={handleSearchSubmit} className="w-full px-3 py-2 text-sm font-bold text-primary border-t border-border text-left">
+                {t.search.see_all} "{searchQuery}"
+              </button>
+            </div>
+          )}
+          {dropdownOpen && searchResults.length === 0 && !searchLoading && searchQuery.trim().length >= 2 && (
+            <p className="mt-2 px-3 py-2 text-sm text-muted-foreground">{t.search.no_results_inline}</p>
+          )}
+        </div>
+      )}
+
       {/* Mobile Nav */}
-      {mobileMenuOpen && (
+      {mobileMenuOpen && !searchBarOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-border p-4 flex flex-col gap-2 shadow-lg">
           {navLinks.map((link) => (
             <Link
@@ -119,7 +327,6 @@ export function Navbar() {
               <ChevronRight size={16} className="text-muted-foreground" />
             </Link>
           ))}
-          {/* Mobile Language Switcher */}
           <div className="flex gap-4 pt-3">
             {LANGS.map((l) => (
               <button

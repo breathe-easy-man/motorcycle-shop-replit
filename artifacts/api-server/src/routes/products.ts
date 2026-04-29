@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq, inArray, asc } from "drizzle-orm";
+import { and, eq, inArray, asc, desc, or, ilike } from "drizzle-orm";
 import { db, productsTable, productVariantsTable, insertProductSchema, updateProductSchema, insertProductVariantSchema, updateProductVariantSchema } from "@workspace/db";
 import { requireAdmin } from "../middlewares/adminAuth";
 
@@ -264,6 +264,39 @@ router.delete("/products/:id/variants/:variantId", requireAdmin, async (req, res
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete variant" });
+  }
+});
+
+router.get("/search", async (req, res) => {
+  try {
+    const q = String(req.query.q ?? "").trim();
+    const limit = Math.min(Number(req.query.limit) || 8, 50);
+    if (q.length < 2) { res.json([]); return; }
+    const pattern = `%${q}%`;
+    const rows = await db
+      .select({
+        id: productsTable.id,
+        slug: productsTable.slug,
+        name: productsTable.name,
+        category: productsTable.category,
+        image: productsTable.image,
+        price: productsTable.price,
+        createdAt: productsTable.createdAt,
+      })
+      .from(productsTable)
+      .where(
+        or(
+          ilike(productsTable.name, pattern),
+          ilike(productsTable.category, pattern),
+          ilike(productsTable.manufacturerDescLv, pattern),
+          ilike(productsTable.manufacturerDescEn, pattern),
+        )
+      )
+      .orderBy(asc(productsTable.name))
+      .limit(limit);
+    res.json(rows);
+  } catch {
+    res.status(500).json({ error: "Search failed" });
   }
 });
 

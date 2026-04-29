@@ -22,6 +22,7 @@ import CartPage from "@/pages/cart";
 import CheckoutPage from "@/pages/checkout";
 import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
+import SearchPage from "@/pages/search";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ function Router() {
             <Route path="/checkout" component={CheckoutPage} />
             <Route path="/checkout/success" component={CheckoutSuccess} />
             <Route path="/checkout/cancel" component={CheckoutCancel} />
+            <Route path="/search" component={SearchPage} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

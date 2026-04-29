@@ -375,4 +375,18 @@ export const api = {
         headers: adminHeaders(key),
       }),
   },
+  search: {
+    query: (q: string, limit = 8) =>
+      request<ApiSearchResult[]>(`/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+  },
 };
+
+export interface ApiSearchResult {
+  id: number;
+  slug: string;
+  name: string;
+  category: string;
+  image: string;
+  price: number;
+  createdAt: string;
+}

@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link, useSearch } from "wouter";
-import { ChevronRight, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+
+type SortKey = "price-asc" | "price-desc" | "newest" | "name-asc";
 
 interface ProductVariant {
   id: number;
@@ -27,7 +29,10 @@ interface Product {
   description: string | null;
   stock: number;
   variants: ProductVariant[];
+  createdAt?: string;
 }
+
+const MOTO_CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV"];
 
 export default function Moto() {
   const { t } = useI18n();
@@ -37,6 +42,9 @@ export default function Moto() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredImages, setHoveredImages] = useState<Record<number, string | null>>({});
+  const [sortKey, setSortKey] = useState<SortKey>("name-asc");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCategories, setSidebarCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/products")
@@ -49,16 +57,38 @@ export default function Moto() {
       .finally(() => setLoading(false));
   }, []);
 
-  const MOTO_CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV"];
-
   const categories = [t.moto.filter_all, ...MOTO_CATEGORIES];
-
   const motoProducts = products.filter((p) => MOTO_CATEGORIES.includes(p.category));
 
-  const filtered =
-    activeCategory === t.moto.filter_all || !MOTO_CATEGORIES.includes(activeCategory)
+  const baseFiltered = sidebarCategories.length > 0
+    ? motoProducts.filter((p) => sidebarCategories.includes(p.category))
+    : (activeCategory === t.moto.filter_all || !MOTO_CATEGORIES.includes(activeCategory)
       ? motoProducts
-      : motoProducts.filter((p) => p.category === activeCategory);
+      : motoProducts.filter((p) => p.category === activeCategory));
+
+  const filtered = useMemo(() => {
+    let list = [...baseFiltered];
+    switch (sortKey) {
+      case "price-asc": list.sort((a, b) => a.price - b.price); break;
+      case "price-desc": list.sort((a, b) => b.price - a.price); break;
+      case "newest": list.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()); break;
+      case "name-asc": list.sort((a, b) => a.name.localeCompare(b.name)); break;
+    }
+    return list;
+  }, [baseFiltered, sortKey]);
+
+  const toggleSidebarCat = (cat: string) => {
+    setSidebarCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const sortOptions: { key: SortKey; label: string }[] = [
+    { key: "name-asc", label: t.search.sort_name_asc },
+    { key: "price-asc", label: t.search.sort_price_asc },
+    { key: "price-desc", label: t.search.sort_price_desc },
+    { key: "newest", label: t.search.sort_newest },
+  ];
 
   return (
     <div className="pt-24 pb-20 min-h-screen bg-background">
@@ -87,14 +117,14 @@ export default function Moto() {
       </div>
 
       <div className="container mx-auto px-4 md:px-6">
-        {/* Category Filter */}
-        <div className="flex flex-wrap gap-2 mb-12">
+        {/* Category Filter Buttons */}
+        <div className="flex flex-wrap gap-2 mb-6">
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => { setActiveCategory(cat); setSidebarCategories([]); }}
               className={`px-5 py-2 text-sm font-bold uppercase tracking-widest border transition-colors ${
-                activeCategory === cat
+                sidebarCategories.length === 0 && activeCategory === cat
                   ? "bg-primary border-primary text-white"
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
@@ -104,103 +134,165 @@ export default function Moto() {
           ))}
         </div>
 
-        {/* Products Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-32">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        {/* Sort + Sidebar Toggle Bar */}
+        <div className="flex items-center justify-between mb-8 gap-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {sidebarOpen ? t.search.collapse_filter : t.search.show_filter}
+            {sidebarCategories.length > 0 && (
+              <span className="bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {sidebarCategories.length}
+              </span>
+            )}
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.search.sort_label}:</span>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+              className="text-sm border border-border bg-background px-3 py-1.5 focus:outline-none focus:border-primary rounded-none"
+            >
+              {sortOptions.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((product, i) => {
-              const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
-              const variantCount = hasVariants ? product.variants.length : 0;
-              return (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
-                >
-                  <Link href={`/moto/${product.slug}`} className="block">
-                    <div className="relative overflow-hidden aspect-[4/3] bg-muted cursor-pointer">
-                      {product.badge && (
-                        <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
-                          {product.badge}
-                        </span>
-                      )}
-                      <img
-                        src={hoveredImages[product.id] ?? product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop";
-                        }}
+        </div>
+
+        <div className="flex gap-8">
+          {/* Collapsible Sidebar */}
+          {sidebarOpen && (
+            <aside className="w-48 flex-shrink-0">
+              <div className="bg-card border border-border p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.search.filter_category}</h3>
+                  {sidebarCategories.length > 0 && (
+                    <button onClick={() => setSidebarCategories([])} className="text-xs text-primary hover:underline">
+                      <X className="h-3 w-3 inline" />
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {MOTO_CATEGORIES.map((cat) => (
+                    <label key={cat} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={sidebarCategories.includes(cat)}
+                        onChange={() => toggleSidebarCat(cat)}
+                        className="accent-primary"
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-primary px-4 py-2">
-                          {t.moto.view_details}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      {product.engine && (
-                        <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                          {product.engine}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                        {product.category}
-                      </Badge>
-                    </div>
-                    <h3 className="font-bold text-foreground text-sm leading-tight mb-2">
-                      {product.name}
-                    </h3>
-                    {/* Color dots */}
-                    {hasVariants && (
-                      <div className="flex items-center gap-1.5 mb-3">
-                        {product.variants.slice(0, 6).map((v) => (
-                          <span
-                            key={v.id}
-                            title={v.colorName}
-                            className="h-4 w-4 rounded-full border-2 border-border hover:border-primary flex-shrink-0 cursor-pointer transition-transform hover:scale-125"
-                            style={{ backgroundColor: v.colorHex ?? "#888" }}
-                            onMouseEnter={() => setHoveredImages((prev) => ({ ...prev, [product.id]: v.image }))}
-                            onMouseLeave={() => setHoveredImages((prev) => ({ ...prev, [product.id]: null }))}
+                      <span className={`text-sm ${sidebarCategories.includes(cat) ? "text-primary font-bold" : "text-foreground group-hover:text-primary"}`}>
+                        {cat}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          )}
+
+          {/* Products Grid */}
+          <div className="flex-1 min-w-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-32">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filtered.map((product, i) => {
+                  const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
+                  const variantCount = hasVariants ? product.variants.length : 0;
+                  return (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.05 }}
+                      className="group bg-card border border-border hover:border-primary/50 transition-all duration-300 overflow-hidden"
+                    >
+                      <Link href={`/moto/${product.slug}`} className="block">
+                        <div className="relative overflow-hidden aspect-[4/3] bg-muted cursor-pointer">
+                          {product.badge && (
+                            <span className="absolute top-3 left-3 z-10 bg-primary text-white text-xs font-bold px-2 py-1 uppercase tracking-wider">
+                              {product.badge}
+                            </span>
+                          )}
+                          <img
+                            src={hoveredImages[product.id] ?? product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop";
+                            }}
                           />
-                        ))}
-                        {variantCount > 6 && (
-                          <span className="text-xs text-muted-foreground">+{variantCount - 6}</span>
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity bg-primary px-4 py-2">
+                              {t.moto.view_details}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                      <div className="p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                          {product.engine && (
+                            <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
+                              {product.engine}
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
+                            {product.category}
+                          </Badge>
+                        </div>
+                        <h3 className="font-bold text-foreground text-sm leading-tight mb-2">
+                          {product.name}
+                        </h3>
+                        {hasVariants && (
+                          <div className="flex items-center gap-1.5 mb-3">
+                            {product.variants.slice(0, 6).map((v) => (
+                              <span
+                                key={v.id}
+                                title={v.colorName}
+                                className="h-4 w-4 rounded-full border-2 border-border hover:border-primary flex-shrink-0 cursor-pointer transition-transform hover:scale-125"
+                                style={{ backgroundColor: v.colorHex ?? "#888" }}
+                                onMouseEnter={() => setHoveredImages((prev) => ({ ...prev, [product.id]: v.image }))}
+                                onMouseLeave={() => setHoveredImages((prev) => ({ ...prev, [product.id]: null }))}
+                              />
+                            ))}
+                            {variantCount > 6 && (
+                              <span className="text-xs text-muted-foreground">+{variantCount - 6}</span>
+                            )}
+                          </div>
                         )}
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <span className="text-xl font-black text-primary">
+                              €{product.price.toLocaleString()}
+                            </span>
+                            {product.oldPrice && (
+                              <span className="ml-2 text-sm text-muted-foreground line-through">
+                                €{product.oldPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Link href={`/moto/${product.slug}`}>
+                          <Button className="w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
+                            {t.moto.view_details} <ChevronRight className="ml-1 h-3 w-3" />
+                          </Button>
+                        </Link>
                       </div>
-                    )}
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <span className="text-xl font-black text-primary">
-                          €{product.price.toLocaleString()}
-                        </span>
-                        {product.oldPrice && (
-                          <span className="ml-2 text-sm text-muted-foreground line-through">
-                            €{product.oldPrice.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Link href={`/moto/${product.slug}`}>
-                      <Button className="w-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-white transition-colors rounded-none text-xs uppercase tracking-widest font-bold">
-                        {t.moto.view_details} <ChevronRight className="ml-1 h-3 w-3" />
-                      </Button>
-                    </Link>
-                  </div>
-                </motion.div>
-              );
-            })}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Leasing CTA */}
         <div className="mt-20 border border-border p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 bg-card">
