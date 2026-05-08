@@ -21,6 +21,7 @@ export interface ApiProduct {
   price: number;
   oldPrice: number | null;
   category: string;
+  categoryId: number | null;
   engine: string;
   image: string;
   badge: string | null;
@@ -130,6 +131,19 @@ export interface ApiLeasingPartner {
 }
 
 export type ApiLeasingPartnerInput = Omit<ApiLeasingPartner, "id" | "createdAt" | "updatedAt">;
+
+export interface ApiCategory {
+  id: number;
+  name: string;
+  slug: string;
+  parentId: number | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  children: ApiCategory[];
+}
+
+export type ApiCategoryInput = Omit<ApiCategory, "id" | "createdAt" | "updatedAt" | "children">;
 
 const BASE = "/api";
 
@@ -371,6 +385,26 @@ export const api = {
       }),
     delete: (entryId: number, key: string) =>
       request<{ success: boolean }>(`/availability/${entryId}`, {
+        method: "DELETE",
+        headers: adminHeaders(key),
+      }),
+  },
+  categories: {
+    list: () => request<ApiCategory[]>("/categories"),
+    create: (data: ApiCategoryInput, key: string) =>
+      request<ApiCategory>("/categories", {
+        method: "POST",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    update: (id: number, data: Partial<ApiCategoryInput>, key: string) =>
+      request<ApiCategory>(`/categories/${id}`, {
+        method: "PATCH",
+        headers: adminHeaders(key),
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number, key: string) =>
+      request<{ success: boolean }>(`/categories/${id}`, {
         method: "DELETE",
         headers: adminHeaders(key),
       }),

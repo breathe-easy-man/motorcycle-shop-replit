@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { LucideIcon } from "lucide-react";
-import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry, type ApiAvailabilityEntryAdmin, type ApiLeasingPartner, type ApiLeasingPartnerInput } from "@/lib/api";
+import { api, type ApiProduct, type ApiProductInput, type ApiVariantInput, type ApiReview, type ApiInquiry, type ApiOrder, type ApiOrderItem, type ApiDeliveryAddress, type ApiLocation, type ApiDeliveryOption, type ApiAvailabilityEntry, type ApiAvailabilityEntryAdmin, type ApiLeasingPartner, type ApiLeasingPartnerInput, type ApiCategory } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +8,13 @@ import {
   Plus, Pencil, Trash2, LogOut, Save, X, Package,
   ChevronUp, ChevronDown, Search, Star, MessageSquare,
   CheckCircle2, Eye, Mail, Phone, ShoppingBag, AlertCircle, Palette, ShoppingCart,
-  MapPin, Truck, Building2, Percent, Settings
+  MapPin, Truck, Building2, Percent, Settings, FolderTree
 } from "lucide-react";
 
 const STORAGE_KEY = "mobilus_admin_key";
-const CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV", "Velo", "Skrituļslidas", "Slēpes", "Snoubords"];
 
 type FormState = Omit<ApiProductInput, "variants">;
-type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability" | "leasing" | "settings";
+type AdminTab = "products" | "reviews" | "inquiries" | "orders" | "availability" | "leasing" | "settings" | "categories";
 
 type VariantFormItem = {
   id?: number;
@@ -31,6 +30,7 @@ const emptyForm = (): FormState => ({
   price: 0,
   oldPrice: null,
   category: "Skūteri",
+  categoryId: null,
   engine: "",
   image: "",
   badge: null,
@@ -112,6 +112,16 @@ export default function AdminPage() {
 
   const [deleteConfirm, setDeleteConfirm] = useState<ApiProduct | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Categories state
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [categoryRenameValue, setCategoryRenameValue] = useState("");
+  const [addingCategory, setAddingCategory] = useState<"top" | "sub" | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
 
   // Leasing partners state
   const [leasingPartners, setLeasingPartners] = useState<ApiLeasingPartner[]>([]);
@@ -210,6 +220,13 @@ export default function AdminPage() {
     } catch {}
   }, [adminKey]);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await api.categories.list();
+      setCategories(data);
+    } catch {}
+  }, []);
+
   const loadProductStockEntries = useCallback(async (productId: number) => {
     setLoadingAvailability(true);
     try {
@@ -232,8 +249,9 @@ export default function AdminPage() {
       loadDeliveryOptions();
       loadLeasingPartners();
       loadSettings();
+      loadCategories();
     }
-  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions, loadLeasingPartners, loadSettings]);
+  }, [authed, loadProducts, loadReviews, loadInquiries, loadOrders, loadLocations, loadDeliveryOptions, loadLeasingPartners, loadSettings, loadCategories]);
 
   async function handleLogin() {
     setAuthError("");
@@ -277,7 +295,7 @@ export default function AdminPage() {
   function openEdit(p: ApiProduct) {
     setForm({
       slug: p.slug, name: p.name, price: p.price, oldPrice: p.oldPrice,
-      category: p.category, engine: p.engine, image: p.image, badge: p.badge,
+      category: p.category, categoryId: p.categoryId ?? null, engine: p.engine, image: p.image, badge: p.badge,
       stock: p.stock, featured: p.featured ?? false, descriptionLv: p.descriptionLv, descriptionEn: p.descriptionEn,
       descriptionRu: p.descriptionRu, specs: p.specs,
       manufacturerLogoUrl: p.manufacturerLogoUrl ?? null,
@@ -538,6 +556,7 @@ export default function AdminPage() {
                 { key: "availability" as const, label: "Pieejamība", icon: MapPin, badge: 0 },
                 { key: "leasing" as const, label: "Leasing", icon: Percent, badge: 0 },
                 { key: "settings" as const, label: "Settings", icon: Settings, badge: 0 },
+                { key: "categories" as const, label: "Kategorijas", icon: FolderTree, badge: 0 },
               ] as { key: AdminTab; label: string; icon: LucideIcon; badge: number }[]).map(({ key, label, icon: Icon, badge }) => (
                 <button
                   key={key}
@@ -584,7 +603,7 @@ export default function AdminPage() {
                 <Input placeholder="Search by name or slug..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 rounded-none" />
               </div>
               <div className="flex gap-2 flex-wrap">
-                {["All", ...CATEGORIES].map((c) => (
+                {["All", ...categories.map(c => c.name)].map((c) => (
                   <button key={c} onClick={() => setFilterCat(c)}
                     className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition-colors ${
                       filterCat === c ? "bg-primary border-primary text-white" : "border-border text-muted-foreground hover:border-foreground/40"
@@ -1222,6 +1241,355 @@ export default function AdminPage() {
             </div>
           </>
         )}
+
+        {/* ===== CATEGORIES TAB ===== */}
+        {activeTab === "categories" && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tighter">Kategorijas</h1>
+                <p className="text-muted-foreground text-sm">{categories.length} top-level · {categories.reduce((n, c) => n + c.children.length, 0)} subcategories</p>
+              </div>
+              <Button variant="outline" onClick={loadCategories} className="rounded-none border-border text-muted-foreground hover:text-foreground">
+                Atjaunot
+              </Button>
+            </div>
+
+            {categoryError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 mb-4 text-sm flex items-center justify-between">
+                {categoryError}
+                <button onClick={() => setCategoryError("")}><X className="h-4 w-4" /></button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left: top-level categories */}
+              <div className="border border-border">
+                <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border">
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Galvenās kategorijas</span>
+                  <Button size="sm" className="rounded-none h-7 text-xs bg-primary hover:bg-primary/90"
+                    onClick={() => { setAddingCategory("top"); setNewCategoryName(""); setCategoryError(""); }}>
+                    <Plus className="h-3 w-3 mr-1" /> Pievienot
+                  </Button>
+                </div>
+
+                {addingCategory === "top" && (
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-primary/20 bg-primary/5">
+                    <Input
+                      autoFocus
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          if (!newCategoryName.trim()) return;
+                          setSavingCategory(true);
+                          try {
+                            const slug = newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                            const created = await api.categories.create({ name: newCategoryName.trim(), slug, parentId: null, sortOrder: categories.length }, adminKey);
+                            setCategories(cs => [...cs, { ...created, children: [] }]);
+                            setAddingCategory(null);
+                            setNewCategoryName("");
+                          } catch (err: any) {
+                            setCategoryError(err.message);
+                          }
+                          setSavingCategory(false);
+                        }
+                        if (e.key === "Escape") { setAddingCategory(null); setNewCategoryName(""); }
+                      }}
+                      placeholder="Nosaukums (Enter lai saglabātu)"
+                      className="rounded-none h-7 text-sm flex-1"
+                    />
+                    <Button size="sm" variant="ghost" onClick={() => { setAddingCategory(null); setNewCategoryName(""); }}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+
+                <div className="divide-y divide-border/50">
+                  {categories.length === 0 && <p className="text-muted-foreground text-sm px-4 py-6">Nav kategoriju.</p>}
+                  {categories.map((cat, idx) => (
+                    <div
+                      key={cat.id}
+                      className={`flex items-center gap-2 px-4 py-3 cursor-pointer transition-colors ${selectedParentId === cat.id ? "bg-primary/10 border-l-2 border-primary" : "hover:bg-muted/30 border-l-2 border-transparent"}`}
+                      onClick={() => setSelectedParentId(cat.id === selectedParentId ? null : cat.id)}
+                    >
+                      {editingCategoryId === cat.id ? (
+                        <Input
+                          autoFocus
+                          value={categoryRenameValue}
+                          onChange={(e) => setCategoryRenameValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={async (e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") {
+                              if (!categoryRenameValue.trim()) return;
+                              setSavingCategory(true);
+                              try {
+                                const slug = categoryRenameValue.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                                const updated = await api.categories.update(cat.id, { name: categoryRenameValue.trim(), slug }, adminKey);
+                                setCategories(cs => cs.map(c => c.id === updated.id ? { ...updated, children: c.children } : c));
+                                setEditingCategoryId(null);
+                              } catch (err: any) {
+                                setCategoryError(err.message);
+                              }
+                              setSavingCategory(false);
+                            }
+                            if (e.key === "Escape") setEditingCategoryId(null);
+                          }}
+                          className="rounded-none h-7 text-sm flex-1"
+                        />
+                      ) : (
+                        <span className="flex-1 text-sm font-medium text-foreground truncate">{cat.name}
+                          {cat.children.length > 0 && <span className="ml-2 text-xs text-muted-foreground">({cat.children.length})</span>}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                          disabled={idx === 0 || savingCategory}
+                          onClick={async () => {
+                            const prev = categories[idx - 1];
+                            setSavingCategory(true);
+                            try {
+                              await Promise.all([
+                                api.categories.update(cat.id, { sortOrder: prev.sortOrder }, adminKey),
+                                api.categories.update(prev.id, { sortOrder: cat.sortOrder }, adminKey),
+                              ]);
+                              setCategories(cs => {
+                                const next = [...cs];
+                                [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
+                                return next;
+                              });
+                            } catch (err: any) { setCategoryError(err.message); }
+                            setSavingCategory(false);
+                          }}
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                          disabled={idx === categories.length - 1 || savingCategory}
+                          onClick={async () => {
+                            const next = categories[idx + 1];
+                            setSavingCategory(true);
+                            try {
+                              await Promise.all([
+                                api.categories.update(cat.id, { sortOrder: next.sortOrder }, adminKey),
+                                api.categories.update(next.id, { sortOrder: cat.sortOrder }, adminKey),
+                              ]);
+                              setCategories(cs => {
+                                const arr = [...cs];
+                                [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+                                return arr;
+                              });
+                            } catch (err: any) { setCategoryError(err.message); }
+                            setSavingCategory(false);
+                          }}
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                          onClick={() => { setEditingCategoryId(cat.id); setCategoryRenameValue(cat.name); }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-red-400 transition-colors"
+                          onClick={async () => {
+                            if (!confirm(`Dzēst kategoriju "${cat.name}"?`)) return;
+                            setSavingCategory(true);
+                            try {
+                              await api.categories.delete(cat.id, adminKey);
+                              setCategories(cs => cs.filter(c => c.id !== cat.id));
+                              if (selectedParentId === cat.id) setSelectedParentId(null);
+                            } catch (err: any) { setCategoryError(err.message); }
+                            setSavingCategory(false);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: subcategories of selected parent */}
+              <div className="border border-border">
+                <div className="flex items-center justify-between px-4 py-3 bg-muted/40 border-b border-border">
+                  <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    {selectedParentId ? `Apakškategorijas — ${categories.find(c => c.id === selectedParentId)?.name}` : "Apakškategorijas"}
+                  </span>
+                  {selectedParentId && (
+                    <Button size="sm" className="rounded-none h-7 text-xs bg-primary hover:bg-primary/90"
+                      onClick={() => { setAddingCategory("sub"); setNewCategoryName(""); setCategoryError(""); }}>
+                      <Plus className="h-3 w-3 mr-1" /> Pievienot
+                    </Button>
+                  )}
+                </div>
+
+                {!selectedParentId ? (
+                  <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                    Izvēlieties galveno kategoriju pa kreisi
+                  </div>
+                ) : (
+                  <>
+                    {addingCategory === "sub" && (
+                      <div className="flex items-center gap-2 px-4 py-3 border-b border-primary/20 bg-primary/5">
+                        <Input
+                          autoFocus
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          onKeyDown={async (e) => {
+                            if (e.key === "Enter") {
+                              if (!newCategoryName.trim()) return;
+                              setSavingCategory(true);
+                              const parent = categories.find(c => c.id === selectedParentId);
+                              try {
+                                const slug = newCategoryName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                                const created = await api.categories.create({ name: newCategoryName.trim(), slug, parentId: selectedParentId, sortOrder: parent?.children.length ?? 0 }, adminKey);
+                                setCategories(cs => cs.map(c => c.id === selectedParentId ? { ...c, children: [...c.children, { ...created, children: [] }] } : c));
+                                setAddingCategory(null);
+                                setNewCategoryName("");
+                              } catch (err: any) {
+                                setCategoryError(err.message);
+                              }
+                              setSavingCategory(false);
+                            }
+                            if (e.key === "Escape") { setAddingCategory(null); setNewCategoryName(""); }
+                          }}
+                          placeholder="Nosaukums (Enter lai saglabātu)"
+                          className="rounded-none h-7 text-sm flex-1"
+                        />
+                        <Button size="sm" variant="ghost" onClick={() => { setAddingCategory(null); setNewCategoryName(""); }}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="divide-y divide-border/50">
+                      {(() => {
+                        const parent = categories.find(c => c.id === selectedParentId);
+                        const subs = parent?.children ?? [];
+                        if (subs.length === 0 && addingCategory !== "sub") {
+                          return <p className="text-muted-foreground text-sm px-4 py-6">Nav apakškategoriju.</p>;
+                        }
+                        return subs.map((sub, idx) => (
+                          <div key={sub.id} className="flex items-center gap-2 px-4 py-3 hover:bg-muted/30 transition-colors">
+                            {editingCategoryId === sub.id ? (
+                              <Input
+                                autoFocus
+                                value={categoryRenameValue}
+                                onChange={(e) => setCategoryRenameValue(e.target.value)}
+                                onKeyDown={async (e) => {
+                                  if (e.key === "Enter") {
+                                    if (!categoryRenameValue.trim()) return;
+                                    setSavingCategory(true);
+                                    try {
+                                      const slug = categoryRenameValue.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                                      const updated = await api.categories.update(sub.id, { name: categoryRenameValue.trim(), slug }, adminKey);
+                                      setCategories(cs => cs.map(c => c.id === selectedParentId
+                                        ? { ...c, children: c.children.map(s => s.id === updated.id ? { ...updated, children: [] } : s) }
+                                        : c
+                                      ));
+                                      setEditingCategoryId(null);
+                                    } catch (err: any) {
+                                      setCategoryError(err.message);
+                                    }
+                                    setSavingCategory(false);
+                                  }
+                                  if (e.key === "Escape") setEditingCategoryId(null);
+                                }}
+                                className="rounded-none h-7 text-sm flex-1"
+                              />
+                            ) : (
+                              <span className="flex-1 text-sm text-foreground">{sub.name}</span>
+                            )}
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
+                              <button
+                                className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                                disabled={idx === 0 || savingCategory}
+                                onClick={async () => {
+                                  const parent = categories.find(c => c.id === selectedParentId)!;
+                                  const prev = parent.children[idx - 1];
+                                  setSavingCategory(true);
+                                  try {
+                                    await Promise.all([
+                                      api.categories.update(sub.id, { sortOrder: prev.sortOrder }, adminKey),
+                                      api.categories.update(prev.id, { sortOrder: sub.sortOrder }, adminKey),
+                                    ]);
+                                    setCategories(cs => cs.map(c => {
+                                      if (c.id !== selectedParentId) return c;
+                                      const arr = [...c.children];
+                                      [arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]];
+                                      return { ...c, children: arr };
+                                    }));
+                                  } catch (err: any) { setCategoryError(err.message); }
+                                  setSavingCategory(false);
+                                }}
+                              >
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                                disabled={idx === subs.length - 1 || savingCategory}
+                                onClick={async () => {
+                                  const parent = categories.find(c => c.id === selectedParentId)!;
+                                  const next = parent.children[idx + 1];
+                                  setSavingCategory(true);
+                                  try {
+                                    await Promise.all([
+                                      api.categories.update(sub.id, { sortOrder: next.sortOrder }, adminKey),
+                                      api.categories.update(next.id, { sortOrder: sub.sortOrder }, adminKey),
+                                    ]);
+                                    setCategories(cs => cs.map(c => {
+                                      if (c.id !== selectedParentId) return c;
+                                      const arr = [...c.children];
+                                      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+                                      return { ...c, children: arr };
+                                    }));
+                                  } catch (err: any) { setCategoryError(err.message); }
+                                  setSavingCategory(false);
+                                }}
+                              >
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                                onClick={() => { setEditingCategoryId(sub.id); setCategoryRenameValue(sub.name); }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-red-400 transition-colors"
+                                onClick={async () => {
+                                  if (!confirm(`Dzēst apakškategoriju "${sub.name}"?`)) return;
+                                  setSavingCategory(true);
+                                  try {
+                                    await api.categories.delete(sub.id, adminKey);
+                                    setCategories(cs => cs.map(c => c.id === selectedParentId
+                                      ? { ...c, children: c.children.filter(s => s.id !== sub.id) }
+                                      : c
+                                    ));
+                                  } catch (err: any) { setCategoryError(err.message); }
+                                  setSavingCategory(false);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
       </main>
 
       {/* ===== PRODUCT EDIT/ADD MODAL ===== */}
@@ -1270,12 +1638,68 @@ export default function AdminPage() {
                     <label className="block text-xs text-muted-foreground mb-1">Slug</label>
                     <Input value={form.slug} onChange={(e) => setField("slug", e.target.value)} className="rounded-none font-mono text-sm" placeholder="product-slug" />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-xs text-muted-foreground mb-1">Category</label>
-                    <select value={form.category} onChange={(e) => setField("category", e.target.value)}
-                      className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground">
-                      {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                    </select>
+                    {categories.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Top-level category</label>
+                          <select
+                            value={form.categoryId !== null && form.categoryId !== undefined
+                              ? (categories.find(c => c.id === form.categoryId)?.id ?? categories.find(c => c.children.some(s => s.id === form.categoryId))?.id ?? "")
+                              : ""}
+                            onChange={(e) => {
+                              const parentId = e.target.value ? Number(e.target.value) : null;
+                              const parent = categories.find(c => c.id === parentId);
+                              setField("categoryId", parentId);
+                              setField("category", parent?.name ?? "");
+                            }}
+                            className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground"
+                          >
+                            <option value="">— Select category —</option>
+                            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">Subcategory (optional)</label>
+                          {(() => {
+                            const parentCatId = form.categoryId !== null && form.categoryId !== undefined
+                              ? (categories.find(c => c.id === form.categoryId)
+                                ? form.categoryId
+                                : categories.find(c => c.children.some(s => s.id === form.categoryId))?.id ?? null)
+                              : null;
+                            const parent = categories.find(c => c.id === parentCatId);
+                            const subs = parent?.children ?? [];
+                            const currentSubId = form.categoryId !== null && form.categoryId !== undefined
+                              ? (categories.find(c => c.id === form.categoryId) ? null : form.categoryId)
+                              : null;
+                            return (
+                              <select
+                                value={currentSubId ?? ""}
+                                onChange={(e) => {
+                                  if (!e.target.value) {
+                                    setField("categoryId", parentCatId);
+                                    setField("category", parent?.name ?? "");
+                                  } else {
+                                    const sub = subs.find(s => s.id === Number(e.target.value));
+                                    setField("categoryId", Number(e.target.value));
+                                    setField("category", sub?.name ?? "");
+                                  }
+                                }}
+                                disabled={!parent || subs.length === 0}
+                                className="w-full bg-background border border-input px-3 py-2 text-sm rounded-none text-foreground disabled:opacity-50"
+                              >
+                                <option value="">{subs.length === 0 ? "No subcategories" : "— No subcategory —"}</option>
+                                {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                              </select>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <Input value={form.category} onChange={(e) => setField("category", e.target.value)} className="rounded-none" placeholder="Category name" />
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">Legacy text: <span className="font-mono">{form.category || "—"}</span></p>
                   </div>
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Price (€)</label>

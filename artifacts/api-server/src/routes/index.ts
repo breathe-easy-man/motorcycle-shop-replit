@@ -9,10 +9,12 @@ import availabilityRouter from "./availability";
 import leasingPartnersRouter from "./leasing-partners";
 import contactRouter from "./contact";
 import settingsRouter from "./settings";
+import categoriesRouter from "./categories";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(categoriesRouter);
 router.use(productsRouter);
 router.use(reviewsRouter);
 router.use(inquiriesRouter);

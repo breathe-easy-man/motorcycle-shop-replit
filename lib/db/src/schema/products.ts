@@ -2,6 +2,28 @@ import { pgTable, serial, text, integer, jsonb, timestamp, boolean, numeric } fr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+export const categoriesTable = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  parentId: integer("parent_id"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCategorySchema = createInsertSchema(categoriesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateCategorySchema = insertCategorySchema.partial();
+
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type UpdateCategory = z.infer<typeof updateCategorySchema>;
+export type Category = typeof categoriesTable.$inferSelect;
+
 export const productsTable = pgTable("products", {
   id: serial("id").primaryKey(),
   slug: text("slug").notNull().unique(),
@@ -9,6 +31,7 @@ export const productsTable = pgTable("products", {
   price: integer("price").notNull(),
   oldPrice: integer("old_price"),
   category: text("category").notNull(),
+  categoryId: integer("category_id").references(() => categoriesTable.id, { onDelete: "set null" }),
   engine: text("engine").notNull(),
   image: text("image").notNull(),
   badge: text("badge"),
