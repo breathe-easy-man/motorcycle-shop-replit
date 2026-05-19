@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useI18n, Lang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
 import { api, type ApiSearchResult } from "@/lib/api";
+import { useCategories, buildCategoryRouteMap } from "@/lib/useCategories";
 
 const LANGS: { code: Lang; label: string }[] = [
   { code: "lv", label: "LV" },
@@ -12,17 +13,17 @@ const LANGS: { code: Lang; label: string }[] = [
   { code: "ru", label: "RU" },
 ];
 
-const MOTO_CATS = new Set(["Skūteri", "Elektro", "Motocikli", "ATV"]);
-const VELO_CATS = new Set(["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"]);
-const SKATE_CATS = new Set(["Skrituļslidas"]);
-const WINTER_CATS = new Set(["Slēpošana", "Snoubords"]);
+const FALLBACK_MOTO = new Set(["Skūteri", "Elektro", "Motocikli", "ATV"]);
+const FALLBACK_VELO = new Set(["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"]);
+const FALLBACK_SKATE = new Set(["Skrituļslidas"]);
+const FALLBACK_WINTER = new Set(["Slēpošana", "Snoubords"]);
 
-function getProductPath(result: ApiSearchResult): string {
+function getProductPathFallback(result: ApiSearchResult): string {
   const cat = result.category;
-  if (MOTO_CATS.has(cat)) return `/moto/${result.slug}`;
-  if (VELO_CATS.has(cat)) return `/velo/${result.slug}`;
-  if (SKATE_CATS.has(cat)) return `/skates/${result.slug}`;
-  if (WINTER_CATS.has(cat)) return `/winter/${result.slug}`;
+  if (FALLBACK_MOTO.has(cat)) return `/moto/${result.slug}`;
+  if (FALLBACK_VELO.has(cat)) return `/velo/${result.slug}`;
+  if (FALLBACK_SKATE.has(cat)) return `/skates/${result.slug}`;
+  if (FALLBACK_WINTER.has(cat)) return `/winter/${result.slug}`;
   return `/moto/${result.slug}`;
 }
 
@@ -39,6 +40,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t, lang, setLang } = useI18n();
   const { count } = useCart();
+  const { categories } = useCategories();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
@@ -46,11 +48,18 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-  // Separate refs so each search region can be independently detected
   const desktopSearchRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const categoryRouteMap = buildCategoryRouteMap(categories);
+
+  function getProductPath(result: ApiSearchResult): string {
+    const route = categoryRouteMap.get(result.category);
+    if (route) return `/${route}/${result.slug}`;
+    return getProductPathFallback(result);
+  }
 
   const navLinks = [
     { href: "/moto", label: t.nav.moto },
@@ -195,7 +204,6 @@ export function Navbar() {
 
         {/* Desktop Right: Search (persistent) + Language + Cart */}
         <div className="hidden md:flex items-center gap-3 flex-shrink-0">
-          {/* Desktop search — always visible, own ref */}
           <div className="relative" ref={desktopSearchRef}>
             <form onSubmit={handleSearchSubmit} className="flex items-center">
               <input
@@ -275,7 +283,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Search Bar — own ref so outside-click works independently of desktop */}
+      {/* Mobile Search Bar */}
       {mobileSearchOpen && (
         <div className="md:hidden border-b border-border bg-white px-4 py-2" ref={mobileSearchRef}>
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { ChevronRight, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useCategories, findSection } from "@/lib/useCategories";
 
 type SortKey = "price-asc" | "price-desc" | "newest" | "name-asc";
 
@@ -21,6 +22,7 @@ interface Product {
   name: string;
   slug: string;
   category: string;
+  categoryId: number | null;
   price: number;
   oldPrice: number | null;
   engine: string | null;
@@ -31,11 +33,12 @@ interface Product {
   createdAt?: string;
 }
 
-const WINTER_CATEGORIES = ["Slēpošana", "Snoubords"];
+const FALLBACK_CATEGORIES = ["Slēpošana", "Snoubords"];
 
 export default function Winter() {
   const { t, lang } = useI18n();
   const [, setLocation] = useLocation();
+  const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,26 +52,27 @@ export default function Winter() {
       .then((r) => r.json())
       .then((data) => {
         const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
-        setProducts(list.filter((p) => WINTER_CATEGORIES.includes(p.category)));
+        setProducts(list);
       })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const filterLabel: Record<string, string> = {
-    All: lang === "lv" ? "Visi" : lang === "ru" ? "Все" : "All",
-    Slēpošana: lang === "lv" ? "Slēpes" : lang === "ru" ? "Лыжи" : "Skis",
-    Snoubords: lang === "lv" ? "Snoubords" : lang === "ru" ? "Сноуборд" : "Snowboard",
-  };
+  const section = findSection(categories, "winter");
+  const subCategories: string[] =
+    section && section.children.length > 0
+      ? section.children.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((c) => c.name)
+      : FALLBACK_CATEGORIES;
 
-  const catLabel: Record<string, string> = {
-    Slēpošana: lang === "lv" ? "Slēpes" : lang === "ru" ? "Лыжи" : "Skis",
-    Snoubords: lang === "lv" ? "Snoubords" : lang === "ru" ? "Сноуборд" : "Snowboard",
-  };
+  const subCategorySet = new Set(subCategories);
+  const winterProducts = products.filter((p) => subCategorySet.has(p.category));
+  const filterKeys = ["All", ...subCategories];
+
+  const allLabel = lang === "lv" ? "Visi" : lang === "ru" ? "Все" : "All";
 
   const baseFiltered = sidebarCategories.length > 0
-    ? products.filter((p) => sidebarCategories.includes(p.category))
-    : (activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory));
+    ? winterProducts.filter((p) => sidebarCategories.includes(p.category))
+    : (activeCategory === "All" ? winterProducts : winterProducts.filter((p) => p.category === activeCategory));
 
   const filtered = useMemo(() => {
     let list = [...baseFiltered];
@@ -121,7 +125,7 @@ export default function Winter() {
       <div className="container mx-auto px-4 md:px-6">
         {/* Category Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {["All", ...WINTER_CATEGORIES].map((cat) => (
+          {filterKeys.map((cat) => (
             <button
               key={cat}
               onClick={() => { setActiveCategory(cat); setSidebarCategories([]); }}
@@ -131,7 +135,7 @@ export default function Winter() {
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {filterLabel[cat] ?? cat}
+              {cat === "All" ? allLabel : cat}
             </button>
           ))}
         </div>
@@ -178,7 +182,7 @@ export default function Winter() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  {WINTER_CATEGORIES.map((cat) => (
+                  {subCategories.map((cat) => (
                     <label key={cat} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="checkbox"
@@ -187,7 +191,7 @@ export default function Winter() {
                         className="accent-primary"
                       />
                       <span className={`text-sm ${sidebarCategories.includes(cat) ? "text-primary font-bold" : "text-foreground group-hover:text-primary"}`}>
-                        {catLabel[cat] ?? cat}
+                        {cat}
                       </span>
                     </label>
                   ))}
@@ -233,7 +237,7 @@ export default function Winter() {
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                          {catLabel[product.category] ?? product.category}
+                          {product.category}
                         </Badge>
                       </div>
                       <h3 className="font-bold text-foreground text-sm leading-tight mb-2">{product.name}</h3>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useSearch } from "wouter";
 import { ChevronRight, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useCategories, findSection } from "@/lib/useCategories";
 
 type SortKey = "price-asc" | "price-desc" | "newest" | "name-asc";
 
@@ -21,6 +22,7 @@ interface Product {
   name: string;
   slug: string;
   category: string;
+  categoryId: number | null;
   price: number;
   oldPrice: number | null;
   engine: string | null;
@@ -32,12 +34,13 @@ interface Product {
   createdAt?: string;
 }
 
-const MOTO_CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV"];
+const FALLBACK_CATEGORIES = ["Skūteri", "Elektro", "Motocikli", "ATV"];
 
 export default function Moto() {
   const { t } = useI18n();
   const search = useSearch();
   const categoryParam = new URLSearchParams(search).get("category");
+  const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = useState(categoryParam ?? t.moto.filter_all);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,12 +60,19 @@ export default function Moto() {
       .finally(() => setLoading(false));
   }, []);
 
-  const categories = [t.moto.filter_all, ...MOTO_CATEGORIES];
-  const motoProducts = products.filter((p) => MOTO_CATEGORIES.includes(p.category));
+  const section = findSection(categories, "moto");
+  const subCategories: string[] =
+    section && section.children.length > 0
+      ? section.children.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((c) => c.name)
+      : FALLBACK_CATEGORIES;
+
+  const subCategorySet = new Set(subCategories);
+  const motoProducts = products.filter((p) => subCategorySet.has(p.category));
+  const categoryList = [t.moto.filter_all, ...subCategories];
 
   const baseFiltered = sidebarCategories.length > 0
     ? motoProducts.filter((p) => sidebarCategories.includes(p.category))
-    : (activeCategory === t.moto.filter_all || !MOTO_CATEGORIES.includes(activeCategory)
+    : (activeCategory === t.moto.filter_all || !subCategorySet.has(activeCategory)
       ? motoProducts
       : motoProducts.filter((p) => p.category === activeCategory));
 
@@ -119,7 +129,7 @@ export default function Moto() {
       <div className="container mx-auto px-4 md:px-6">
         {/* Category Filter Buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {categories.map((cat) => (
+          {categoryList.map((cat) => (
             <button
               key={cat}
               onClick={() => { setActiveCategory(cat); setSidebarCategories([]); }}
@@ -176,7 +186,7 @@ export default function Moto() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  {MOTO_CATEGORIES.map((cat) => (
+                  {subCategories.map((cat) => (
                     <label key={cat} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="checkbox"

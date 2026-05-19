@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { ChevronRight, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useCategories, findSection } from "@/lib/useCategories";
 
 type SortKey = "price-asc" | "price-desc" | "newest" | "name-asc";
 
@@ -21,6 +22,7 @@ interface Product {
   name: string;
   slug: string;
   category: string;
+  categoryId: number | null;
   price: number;
   oldPrice: number | null;
   engine: string | null;
@@ -31,11 +33,12 @@ interface Product {
   createdAt?: string;
 }
 
-const VELO_CATEGORIES = ["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"];
+const FALLBACK_CATEGORIES = ["Pilsēta", "Kalns", "E-Velo", "Bērniem", "Šoseja"];
 
 export default function Velo() {
   const { t, lang } = useI18n();
   const [, setLocation] = useLocation();
+  const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,26 +52,27 @@ export default function Velo() {
       .then((r) => r.json())
       .then((data) => {
         const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
-        setProducts(list.filter((p) => VELO_CATEGORIES.includes(p.category)));
+        setProducts(list);
       })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const categoryLabel: Record<string, string> = {
-    All: t.velo.filter_all,
-    Pilsēta: t.velo.cat_city,
-    Kalns: t.velo.cat_mountain,
-    "E-Velo": t.velo.cat_electric,
-    Bērniem: t.velo.cat_kids,
-    Šoseja: t.velo.cat_road,
-  };
+  const section = findSection(categories, "velo");
+  const subCategories: string[] =
+    section && section.children.length > 0
+      ? section.children.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((c) => c.name)
+      : FALLBACK_CATEGORIES;
 
-  const filterKeys = ["All", ...VELO_CATEGORIES];
+  const subCategorySet = new Set(subCategories);
+  const veloProducts = products.filter((p) => subCategorySet.has(p.category));
+  const filterKeys = ["All", ...subCategories];
+
+  const allLabel = t.velo.filter_all;
 
   const baseFiltered = sidebarCategories.length > 0
-    ? products.filter((p) => sidebarCategories.includes(p.category))
-    : (activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory));
+    ? veloProducts.filter((p) => sidebarCategories.includes(p.category))
+    : (activeCategory === "All" ? veloProducts : veloProducts.filter((p) => p.category === activeCategory));
 
   const filtered = useMemo(() => {
     let list = [...baseFiltered];
@@ -129,7 +133,7 @@ export default function Velo() {
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {categoryLabel[cat] ?? cat}
+              {cat === "All" ? allLabel : cat}
             </button>
           ))}
         </div>
@@ -176,7 +180,7 @@ export default function Velo() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  {VELO_CATEGORIES.map((cat) => (
+                  {subCategories.map((cat) => (
                     <label key={cat} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="checkbox"
@@ -185,7 +189,7 @@ export default function Velo() {
                         className="accent-primary"
                       />
                       <span className={`text-sm ${sidebarCategories.includes(cat) ? "text-primary font-bold" : "text-foreground group-hover:text-primary"}`}>
-                        {categoryLabel[cat] ?? cat}
+                        {cat}
                       </span>
                     </label>
                   ))}
@@ -231,7 +235,7 @@ export default function Velo() {
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                          {categoryLabel[bike.category] ?? bike.category}
+                          {bike.category}
                         </Badge>
                       </div>
                       <h3 className="font-bold text-foreground text-sm leading-tight mb-2">{bike.name}</h3>

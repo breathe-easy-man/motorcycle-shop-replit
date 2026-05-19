@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { ChevronRight, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useCategories, findSection } from "@/lib/useCategories";
 
 type SortKey = "price-asc" | "price-desc" | "newest" | "name-asc";
 
@@ -21,6 +22,7 @@ interface Product {
   name: string;
   slug: string;
   category: string;
+  categoryId: number | null;
   price: number;
   oldPrice: number | null;
   engine: string | null;
@@ -31,47 +33,49 @@ interface Product {
   createdAt?: string;
 }
 
-const SKATE_CATEGORIES = ["Skrituļslidas"];
-const FILTER_ENGINES = ["Rekreācija", "Fitness", "Bērnu"];
+const FALLBACK_CATEGORIES = ["Skrituļslidas"];
 
 export default function Skates() {
   const { t, lang } = useI18n();
   const [, setLocation] = useLocation();
+  const { categories } = useCategories();
   const [activeCategory, setActiveCategory] = useState("All");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredImages, setHoveredImages] = useState<Record<number, string | null>>({});
   const [sortKey, setSortKey] = useState<SortKey>("name-asc");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarEngines, setSidebarEngines] = useState<string[]>([]);
+  const [sidebarCategories, setSidebarCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) => {
         const list: Product[] = Array.isArray(data) ? data : (data.products ?? []);
-        setProducts(list.filter((p) => SKATE_CATEGORIES.includes(p.category)));
+        setProducts(list);
       })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const engineLabel: Record<string, string> = {
-    Rekreācija: lang === "lv" ? "Rekreācija" : lang === "ru" ? "Рекреация" : "Recreation",
-    Fitness: "Fitness",
-    Bērnu: lang === "lv" ? "Bērniem" : lang === "ru" ? "Детские" : "Kids",
-  };
+  const section = findSection(categories, "skates");
+  const subCategories: string[] =
+    section && section.children.length > 0
+      ? section.children.slice().sort((a, b) => a.sortOrder - b.sortOrder).map((c) => c.name)
+      : FALLBACK_CATEGORIES;
 
-  const filterLabel: Record<string, string> = {
-    All: lang === "lv" ? "Visi" : lang === "ru" ? "Все" : "All",
-    Rekreācija: lang === "lv" ? "Rekreācija" : lang === "ru" ? "Рекреация" : "Recreation",
-    Fitness: "Fitness",
-    Bērnu: lang === "lv" ? "Bērniem" : lang === "ru" ? "Детские" : "Kids",
-  };
+  const allCategoryNames = new Set([
+    ...(section ? [section.name] : FALLBACK_CATEGORIES),
+    ...subCategories,
+  ]);
+  const skatesProducts = products.filter((p) => allCategoryNames.has(p.category));
 
-  const baseFiltered = sidebarEngines.length > 0
-    ? products.filter((p) => sidebarEngines.includes(p.engine ?? ""))
-    : (activeCategory === "All" ? products : products.filter((p) => p.engine === activeCategory));
+  const filterKeys = ["All", ...subCategories];
+  const allLabel = lang === "lv" ? "Visi" : lang === "ru" ? "Все" : "All";
+
+  const baseFiltered = sidebarCategories.length > 0
+    ? skatesProducts.filter((p) => sidebarCategories.includes(p.category))
+    : (activeCategory === "All" ? skatesProducts : skatesProducts.filter((p) => p.category === activeCategory));
 
   const filtered = useMemo(() => {
     let list = [...baseFiltered];
@@ -84,9 +88,9 @@ export default function Skates() {
     return list;
   }, [baseFiltered, sortKey]);
 
-  const toggleSidebarEngine = (eng: string) => {
-    setSidebarEngines((prev) =>
-      prev.includes(eng) ? prev.filter((e) => e !== eng) : [...prev, eng]
+  const toggleSidebarCat = (cat: string) => {
+    setSidebarCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
     );
   };
 
@@ -122,22 +126,24 @@ export default function Skates() {
       </div>
 
       <div className="container mx-auto px-4 md:px-6">
-        {/* Category Filter Buttons */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {["All", ...FILTER_ENGINES].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => { setActiveCategory(cat); setSidebarEngines([]); }}
-              className={`px-5 py-2 text-sm font-bold uppercase tracking-widest border transition-colors ${
-                sidebarEngines.length === 0 && activeCategory === cat
-                  ? "bg-primary border-primary text-white"
-                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-              }`}
-            >
-              {filterLabel[cat]}
-            </button>
-          ))}
-        </div>
+        {/* Category Filter Buttons — shown whenever subcategories exist */}
+        {subCategories.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {filterKeys.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => { setActiveCategory(cat); setSidebarCategories([]); }}
+                className={`px-5 py-2 text-sm font-bold uppercase tracking-widest border transition-colors ${
+                  sidebarCategories.length === 0 && activeCategory === cat
+                    ? "bg-primary border-primary text-white"
+                    : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                }`}
+              >
+                {cat === "All" ? allLabel : cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Sort + Sidebar Toggle */}
         <div className="flex items-center justify-between mb-8 gap-4">
@@ -147,9 +153,9 @@ export default function Skates() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             {sidebarOpen ? t.search.collapse_filter : t.search.show_filter}
-            {sidebarEngines.length > 0 && (
+            {sidebarCategories.length > 0 && (
               <span className="bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {sidebarEngines.length}
+                {sidebarCategories.length}
               </span>
             )}
           </button>
@@ -169,28 +175,28 @@ export default function Skates() {
 
         <div className="flex gap-8">
           {/* Collapsible Sidebar */}
-          {sidebarOpen && (
+          {sidebarOpen && subCategories.length > 0 && (
             <aside className="w-48 flex-shrink-0">
               <div className="bg-card border border-border p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.search.filter_label}</h3>
-                  {sidebarEngines.length > 0 && (
-                    <button onClick={() => setSidebarEngines([])} className="text-xs text-primary hover:underline">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t.search.filter_category}</h3>
+                  {sidebarCategories.length > 0 && (
+                    <button onClick={() => setSidebarCategories([])} className="text-xs text-primary hover:underline">
                       <X className="h-3 w-3 inline" />
                     </button>
                   )}
                 </div>
                 <div className="space-y-2">
-                  {FILTER_ENGINES.map((eng) => (
-                    <label key={eng} className="flex items-center gap-2 cursor-pointer group">
+                  {subCategories.map((cat) => (
+                    <label key={cat} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="checkbox"
-                        checked={sidebarEngines.includes(eng)}
-                        onChange={() => toggleSidebarEngine(eng)}
+                        checked={sidebarCategories.includes(cat)}
+                        onChange={() => toggleSidebarCat(cat)}
                         className="accent-primary"
                       />
-                      <span className={`text-sm ${sidebarEngines.includes(eng) ? "text-primary font-bold" : "text-foreground group-hover:text-primary"}`}>
-                        {engineLabel[eng] ?? eng}
+                      <span className={`text-sm ${sidebarCategories.includes(cat) ? "text-primary font-bold" : "text-foreground group-hover:text-primary"}`}>
+                        {cat}
                       </span>
                     </label>
                   ))}
@@ -236,7 +242,7 @@ export default function Skates() {
                     <div className="p-5">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="text-xs uppercase tracking-wider border-muted text-muted-foreground">
-                          {engineLabel[product.engine ?? ""] ?? product.engine}
+                          {product.category}
                         </Badge>
                       </div>
                       <h3 className="font-bold text-foreground text-sm leading-tight mb-2">{product.name}</h3>
